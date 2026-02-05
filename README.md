@@ -79,7 +79,7 @@ Let's build something real.
 ---
 
 > 🚧 **Building in Public** 🚧  
-> This project is being built in 12 weeks. Follow the journey on [X (Twitter)](https://twitter.com/yourhandle) or [LinkedIn](https://linkedin.com/in/yourprofile).
+> This project is being built in 12 weeks. Follow the journey on [X (Twitter)](https://x.com/Adam_Dono_) or [LinkedIn](https://www.linkedin.com/in/adam-dono-85b766242/).
 
 ---
 
@@ -99,7 +99,7 @@ Let's build something real.
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/yourusername/bro-app.git
+   git clone https://github.com/AdamDono/bro-app.git
    ```
 
 2. **Install dependencies**
