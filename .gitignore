@@ -45,3 +45,7 @@ app.*.map.json
 # Ignore all markdown files EXCEPT README.md
 *.md
 !README.md
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
