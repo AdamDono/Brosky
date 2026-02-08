@@ -1,4 +1,4 @@
-import 'package:bro_app/src/features/auth/presentation/login_screen.dart';
+import 'package:bro_app/src/features/auth/presentation/auth_screen.dart';
 import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(builder: (context) => const AuthScreen()),
         );
       }
     });
