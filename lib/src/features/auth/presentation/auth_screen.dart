@@ -1,3 +1,4 @@
+import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -52,7 +53,7 @@ class _AuthScreenState extends State<AuthScreen> {
           email: email,
           password: password,
         );
-        // Auth state listener will handle navigation to Onboarding
+        // Auth state listener will handle navigation
       }
     } on AuthException catch (error) {
       if (mounted) {
@@ -77,10 +78,41 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  void _navigateToOnboarding(BuildContext context) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-    );
+  Future<void> _checkOnboardingStatus() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      // Check if user has completed onboarding (has vibes)
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('vibes')
+          .eq('id', user.id)
+          .single();
+
+      final vibes = List<String>.from(response['vibes'] ?? []);
+
+      if (mounted) {
+        if (vibes.isEmpty) {
+          // First time user - show onboarding
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+          );
+        } else {
+          // Returning user - go straight to home
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      }
+    } catch (error) {
+      // If error, default to onboarding
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        );
+      }
+    }
   }
 
   @override
@@ -89,7 +121,7 @@ class _AuthScreenState extends State<AuthScreen> {
     // Listen for successful login
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       if (data.event == AuthChangeEvent.signedIn && mounted) {
-        _navigateToOnboarding(context);
+        _checkOnboardingStatus();
       }
     });
   }

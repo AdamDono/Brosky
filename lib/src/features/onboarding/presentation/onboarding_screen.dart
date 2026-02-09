@@ -1,6 +1,7 @@
 import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -18,6 +19,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {'name': 'Life & Real Talk', 'icon': Icons.chat_bubble_outline},
     {'name': 'Business & Hustle', 'icon': Icons.rocket_launch},
   ];
+
+  Future<void> _saveVibes() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'vibes': selectedVibes})
+          .eq('id', user.id);
+
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving vibes: $error'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,11 +143,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   width: double.infinity,
                   height: 60,
                   child: ElevatedButton(
-                    onPressed: selectedVibes.length >= 2 ? () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      );
-                    } : null,
+                    onPressed: selectedVibes.length >= 2 ? _saveVibes : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2DD4BF),
                       foregroundColor: Colors.black,
