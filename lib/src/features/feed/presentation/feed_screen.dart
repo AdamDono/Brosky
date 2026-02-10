@@ -12,17 +12,26 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
-  late final Stream<List<Map<String, dynamic>>> _postsStream;
+  late Stream<List<Map<String, dynamic>>> _postsStream;
 
   @override
   void initState() {
     super.initState();
-    // Listen for real-time updates and join with profiles
+    _initStream();
+  }
+
+  void _initStream() {
     _postsStream = Supabase.instance.client
         .from('bro_posts')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .map((data) => List<Map<String, dynamic>>.from(data));
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() {
+      _initStream();
+    });
   }
 
   void _showCreatePost() {
@@ -32,17 +41,6 @@ class _FeedScreenState extends State<FeedScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => const CreatePostModal(),
     );
-  }
-
-  Future<void> _handleRefresh() async {
-    setState(() {
-      // Re-initialize the stream to force a fresh fetch
-      _postsStream = Supabase.instance.client
-          .from('bro_posts')
-          .stream(primaryKey: ['id'])
-          .order('created_at', ascending: false)
-          .map((data) => List<Map<String, dynamic>>.from(data));
-    });
   }
 
   @override
@@ -88,7 +86,7 @@ class _FeedScreenState extends State<FeedScreen> {
             final posts = snapshot.data!;
 
             if (posts.isEmpty) {
-              return ListView( // Changed to ListView so RefreshIndicator works
+              return ListView(
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.3),
                   const Icon(Icons.forum_outlined, size: 64, color: Colors.white10),
@@ -102,14 +100,15 @@ class _FeedScreenState extends State<FeedScreen> {
               );
             }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: posts.length,
-            itemBuilder: (context, index) {
-              return BroPostCard(post: posts[index]);
-            },
-          );
-        },
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: posts.length,
+              itemBuilder: (context, index) {
+                return BroPostCard(post: posts[index]);
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreatePost,
@@ -130,7 +129,6 @@ class BroPostCard extends StatelessWidget {
     final createdAt = DateTime.parse(post['created_at']);
 
     return FutureBuilder<Map<String, dynamic>>(
-      // Fetch profile for this post
       future: Supabase.instance.client
           .from('profiles')
           .select('username, avatar_url')
@@ -170,6 +168,22 @@ class BroPostCard extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
+                  if (post['vibe'] != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2DD4BF).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        post['vibe'],
+                        style: const TextStyle(
+                          color: Color(0xFF2DD4BF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),

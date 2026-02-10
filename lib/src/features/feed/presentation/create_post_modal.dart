@@ -11,7 +11,16 @@ class CreatePostModal extends StatefulWidget {
 
 class _CreatePostModalState extends State<CreatePostModal> {
   final TextEditingController _contentController = TextEditingController();
+  String _selectedVibe = 'General';
   bool _isLoading = false;
+
+  final List<String> _vibeOptions = [
+    'General',
+    'Sports & Fitness',
+    'Gaming & Culture',
+    'Life & Real Talk',
+    'Business & Hustle',
+  ];
 
   Future<void> _submitPost() async {
     final content = _contentController.text.trim();
@@ -26,7 +35,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
       await Supabase.instance.client.from('bro_posts').insert({
         'user_id': user.id,
         'content': content,
-        // MVP: We'll add location later once we fix geolocator
+        'vibe': _selectedVibe,
       });
 
       if (mounted) {
@@ -115,6 +124,49 @@ class _CreatePostModalState extends State<CreatePostModal> {
             ),
           ),
           const SizedBox(height: 24),
+          Text(
+            'CHOOSE THE VIBE',
+            style: GoogleFonts.outfit(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white38,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 40,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _vibeOptions.length,
+              itemBuilder: (context, index) {
+                final vibe = _vibeOptions[index];
+                final isSelected = _selectedVibe == vibe;
+                
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedVibe = vibe),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF2DD4BF) : Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      vibe,
+                      style: GoogleFonts.outfit(
+                        color: isSelected ? Colors.black : Colors.white60,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
             height: 54,
