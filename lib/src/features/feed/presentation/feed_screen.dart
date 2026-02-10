@@ -34,6 +34,17 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 
+  Future<void> _handleRefresh() async {
+    setState(() {
+      // Re-initialize the stream to force a fresh fetch
+      _postsStream = Supabase.instance.client
+          .from('bro_posts')
+          .stream(primaryKey: ['id'])
+          .order('created_at', ascending: false)
+          .map((data) => List<Map<String, dynamic>>.from(data));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,29 +54,43 @@ class _FeedScreenState extends State<FeedScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            onPressed: _handleRefresh,
+            icon: const Icon(Icons.refresh, color: Color(0xFF2DD4BF)),
+          ),
+          IconButton(
             onPressed: () {},
             icon: const Icon(Icons.tune, color: Color(0xFF2DD4BF)),
           ),
         ],
       ),
-      body: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: _postsStream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
-          }
+      body: RefreshIndicator(
+        onRefresh: _handleRefresh,
+        color: const Color(0xFF2DD4BF),
+        backgroundColor: const Color(0xFF0F172A),
+        child: StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _postsStream,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Text('Stream Error: ${snapshot.error}\n\nMake sure Realtime is enabled in Supabase!', 
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white60)),
+                ),
+              );
+            }
 
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
-          }
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
+            }
 
-          final posts = snapshot.data!;
+            final posts = snapshot.data!;
 
-          if (posts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            if (posts.isEmpty) {
+              return ListView( // Changed to ListView so RefreshIndicator works
                 children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.3),
                   const Icon(Icons.forum_outlined, size: 64, color: Colors.white10),
                   const SizedBox(height: 16),
                   Text(
@@ -74,9 +99,8 @@ class _FeedScreenState extends State<FeedScreen> {
                     style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16),
                   ),
                 ],
-              ),
-            );
-          }
+              );
+            }
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
