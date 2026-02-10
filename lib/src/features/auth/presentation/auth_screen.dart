@@ -93,6 +93,30 @@ class _AuthScreenState extends State<AuthScreen> {
       final vibes = List<String>.from(response['vibes'] ?? []);
 
       if (mounted) {
+        // Success notification
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.black),
+                const SizedBox(width: 12),
+                Text(
+                  'Welcome Home, Bro!',
+                  style: GoogleFonts.outfit(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF2DD4BF),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(20),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+
         if (vibes.isEmpty) {
           // First time user - show onboarding
           Navigator.of(context).pushReplacement(

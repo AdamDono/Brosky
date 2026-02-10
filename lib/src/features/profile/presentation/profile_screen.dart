@@ -1,4 +1,5 @@
 import 'package:bro_app/src/features/auth/presentation/auth_screen.dart';
+import 'package:bro_app/src/features/profile/presentation/edit_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,6 +15,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _username;
   String? _email;
   String? _bio;
+  String? _avatarUrl;
   List<String> _vibes = [];
   bool _isLoading = true;
 
@@ -28,13 +30,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      // Get email from auth
       _email = user.email;
 
-      // Fetch profile data from profiles table
       final response = await Supabase.instance.client
           .from('profiles')
-          .select('username, bio, vibes')
+          .select('username, bio, vibes, avatar_url')
           .eq('id', user.id)
           .single();
 
@@ -43,6 +43,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _username = response['username'] ?? 'Anonymous';
           _bio = response['bio'] ?? '';
           _vibes = List<String>.from(response['vibes'] ?? []);
+          _avatarUrl = response['avatar_url'];
           _isLoading = false;
         });
       }
@@ -81,81 +82,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _editBio() async {
-    final controller = TextEditingController(text: _bio ?? '');
-    
-    final newBio = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text('Edit Bio', style: GoogleFonts.outfit(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          maxLength: 150,
-          style: GoogleFonts.outfit(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Tell people about yourself...',
-            hintStyle: const TextStyle(color: Colors.white38),
-            enabledBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Colors.white24),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Color(0xFF2DD4BF)),
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          initialData: {
+            'username': _username,
+            'bio': _bio,
+            'vibes': _vibes,
+            'avatar_url': _avatarUrl,
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.outfit(color: Colors.white60)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2DD4BF),
-              foregroundColor: Colors.black,
-            ),
-            child: Text('Save', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
 
-    if (newBio != null && newBio != _bio) {
-      try {
-        final user = Supabase.instance.client.auth.currentUser;
-        if (user == null) return;
-
-        await Supabase.instance.client
-            .from('profiles')
-            .update({'bio': newBio})
-            .eq('id', user.id);
-
-        setState(() => _bio = newBio);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bio updated!'),
-              backgroundColor: Color(0xFF2DD4BF),
-            ),
-          );
-        }
-      } catch (error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error updating bio: $error'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-      }
+    if (result == true) {
+      _fetchProfile();
     }
-    
-    controller.dispose();
   }
 
   @override
@@ -177,12 +120,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 children: [
-                  // Profile Header
-                  const Center(
+                  Center(
                     child: CircleAvatar(
                       radius: 50,
-                      backgroundColor: Color(0xFF2DD4BF),
-                      child: Icon(Icons.person, size: 60, color: Colors.black),
+                      backgroundColor: const Color(0xFF2DD4BF),
+                      backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
+                      child: _avatarUrl == null ? const Icon(Icons.person, size: 60, color: Colors.black) : null,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -203,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    (_bio == null || _bio!.isEmpty) ? 'No bio yet' : _bio!,
+                    (_bio?.isEmpty ?? true) ? 'No bio yet' : _bio!,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                       fontSize: 14,
@@ -227,7 +170,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                   const SizedBox(height: 24),
             
-            // Edit Profile Button
             OutlinedButton(
               onPressed: _editBio,
               style: OutlinedButton.styleFrom(
@@ -243,7 +185,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             
             const SizedBox(height: 32),
 
-            // Stats Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -257,7 +198,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const Divider(color: Colors.white10),
             const SizedBox(height: 16),
 
-            // Settings / Menu Items
             _buildMenuItem(Icons.workspace_premium, 'Bro Premium', badge: true),
             _buildMenuItem(Icons.history, 'Huddle History'),
             _buildMenuItem(Icons.share, 'Invite Friends'),
