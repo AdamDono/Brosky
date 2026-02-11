@@ -3,7 +3,6 @@ import 'package:bro_app/src/features/huddles/presentation/huddles_screen.dart';
 import 'package:bro_app/src/features/match/presentation/match_screen.dart';
 import 'package:bro_app/src/features/profile/presentation/profile_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,25 +29,47 @@ class _HomeScreenState extends State<HomeScreen> {
         children: _screens,
       ),
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Colors.white10, width: 1)),
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1),
+          ),
         ),
         child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
           backgroundColor: const Color(0xFF0F172A),
           selectedItemColor: const Color(0xFF2DD4BF),
           unselectedItemColor: Colors.white38,
-          selectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
-          unselectedLabelStyle: GoogleFonts.outfit(),
           type: BottomNavigationBarType.fixed,
-          currentIndex: _currentIndex,
+          showSelectedLabels: true,
           showUnselectedLabels: true,
-          elevation: 0,
-          onTap: (index) => setState(() => _currentIndex = index),
+          selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+          unselectedLabelStyle: const TextStyle(fontSize: 10),
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Feed'),
-            BottomNavigationBarItem(icon: Icon(Icons.radar), label: 'Match'),
-            BottomNavigationBarItem(icon: Icon(Icons.groups), label: 'Huddles'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.forum_outlined),
+              activeIcon: Icon(Icons.forum),
+              label: 'Feed',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.radar_outlined),
+              activeIcon: Icon(Icons.radar),
+              label: 'Match',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.groups_outlined),
+              activeIcon: Icon(Icons.groups),
+              label: 'Huddles',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile',
+            ),
           ],
         ),
       ),
