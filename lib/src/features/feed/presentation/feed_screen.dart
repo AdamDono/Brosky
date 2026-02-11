@@ -1,4 +1,5 @@
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,6 +15,8 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   late Stream<List<Map<String, dynamic>>> _postsStream;
   String _selectedFilter = 'All';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   final List<String> _filters = [
     'All',
@@ -31,17 +34,26 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   void _initStream() {
-    // We listen to the whole stream and filter locally for the MVP
-    // This ensures real-time updates work smoothly without complex remote filtering
     _postsStream = Supabase.instance.client
         .from('bro_posts')
         .stream(primaryKey: ['id'])
         .order('created_at', ascending: false)
         .map((data) {
-          final list = List<Map<String, dynamic>>.from(data);
+          var list = List<Map<String, dynamic>>.from(data);
+          
+          // 1. Filter by Vibe
           if (_selectedFilter != 'All') {
-            return list.where((post) => post['vibe'] == _selectedFilter).toList();
+            list = list.where((post) => post['vibe'] == _selectedFilter).toList();
           }
+
+          // 2. Filter by Keyword (Search)
+          if (_searchQuery.isNotEmpty) {
+            list = list.where((post) {
+              final content = (post['content'] ?? '').toString().toLowerCase();
+              return content.contains(_searchQuery.toLowerCase());
+            }).toList();
+          }
+          
           return list;
         });
   }
@@ -73,15 +85,51 @@ class _FeedScreenState extends State<FeedScreen> {
             onPressed: _handleRefresh,
             icon: const Icon(Icons.refresh, color: Color(0xFF2DD4BF)),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.tune, color: Color(0xFF2DD4BF)),
-          ),
         ],
       ),
       body: Column(
         children: [
+          // --- Search Bar ---
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                  _initStream();
+                });
+              },
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search keywords, vibes, bros...',
+                hintStyle: const TextStyle(color: Colors.white24),
+                prefixIcon: const Icon(Icons.search, color: Color(0xFF2DD4BF)),
+                suffixIcon: _searchQuery.isNotEmpty 
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white38),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _initStream();
+                        });
+                      },
+                    )
+                  : null,
+                filled: true,
+                fillColor: const Color(0xFF1E293B),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+            ),
+          ),
+          
           _buildFilterBar(),
+          
           Expanded(
             child: RefreshIndicator(
               onRefresh: _handleRefresh,
@@ -94,7 +142,7 @@ class _FeedScreenState extends State<FeedScreen> {
                     return Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24.0),
-                        child: Text('Stream Error: ${snapshot.error}\n\nMake sure Realtime is enabled in Supabase!', 
+                        child: Text('Stream Error: ${snapshot.error}', 
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white60)),
                       ),
@@ -111,12 +159,12 @@ class _FeedScreenState extends State<FeedScreen> {
                     return ListView(
                       children: [
                         SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                        const Icon(Icons.forum_outlined, size: 64, color: Colors.white10),
+                        const Icon(Icons.search_off, size: 64, color: Colors.white10),
                         const SizedBox(height: 16),
                         Text(
-                          _selectedFilter == 'All' 
-                            ? 'The feed is quiet, Bro.\nBe the first to say something.'
-                            : 'No $_selectedFilter posts yet.\nBe the first to start the vibe!',
+                          _searchQuery.isNotEmpty 
+                            ? 'No posts matching "$_searchQuery"'
+                            : 'The feed is quiet, Bro.',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16),
                         ),
@@ -147,8 +195,8 @@ class _FeedScreenState extends State<FeedScreen> {
 
   Widget _buildFilterBar() {
     return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      height: 50,
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -163,7 +211,7 @@ class _FeedScreenState extends State<FeedScreen> {
               selected: isSelected,
               label: Text(filter, style: GoogleFonts.outfit(
                 color: isSelected ? Colors.black : Colors.white60,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               )),
               backgroundColor: const Color(0xFF1E293B),
@@ -209,13 +257,11 @@ class _BroPostCardState extends State<BroPostCard> {
     if (user == null) return;
 
     try {
-      // Just fetch all likes for this post to get the count
       final likesResponse = await Supabase.instance.client
           .from('post_likes')
           .select('id')
           .eq('post_id', widget.post['id']);
       
-      // Check if current user liked it
       final userLikeResponse = await Supabase.instance.client
           .from('post_likes')
           .select()
@@ -268,9 +314,31 @@ class _BroPostCardState extends State<BroPostCard> {
           _isLiked = originalIsLiked;
           _likesCount = originalLikesCount;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update like: $e')),
-        );
+      }
+    }
+  }
+
+  Future<void> _deletePost() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Delete Post?', style: TextStyle(color: Colors.white)),
+        content: const Text('This will remove it from the Brotherhood feed.', style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Delete', style: TextStyle(color: Colors.redAccent))
+          ),
+        ],
+      )
+    );
+
+    if (confirm == true) {
+      await Supabase.instance.client.from('bro_posts').delete().eq('id', widget.post['id']);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post deleted.')));
       }
     }
   }
@@ -279,11 +347,12 @@ class _BroPostCardState extends State<BroPostCard> {
   Widget build(BuildContext context) {
     final userId = widget.post['user_id'];
     final createdAt = DateTime.parse(widget.post['created_at']);
+    final isMyPost = userId == Supabase.instance.client.auth.currentUser?.id;
 
     return FutureBuilder<Map<String, dynamic>>(
       future: Supabase.instance.client
           .from('profiles')
-          .select('username, avatar_url')
+          .select('username, avatar_url, bio, vibes')
           .eq('id', userId)
           .single(),
       builder: (context, snapshot) {
@@ -303,23 +372,36 @@ class _BroPostCardState extends State<BroPostCard> {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundColor: const Color(0xFF2DD4BF),
-                    backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                    child: avatarUrl == null ? const Icon(Icons.person, color: Colors.black) : null,
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: userId))
+                    ),
+                    child: CircleAvatar(
+                      backgroundColor: const Color(0xFF2DD4BF),
+                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                      child: avatarUrl == null ? const Icon(Icons.person, color: Colors.black) : null,
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(username, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                      Text(
-                        '${timeago.format(createdAt)} • 1.2km away',
-                        style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: userId))
                       ),
-                    ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(username, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                          Text(
+                            '${timeago.format(createdAt)} • 1.2km away',
+                            style: const TextStyle(color: Colors.white38, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  const Spacer(),
                   if (widget.post['vibe'] != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -329,12 +411,19 @@ class _BroPostCardState extends State<BroPostCard> {
                       ),
                       child: Text(
                         widget.post['vibe'],
-                        style: const TextStyle(
-                          color: Color(0xFF2DD4BF),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: const TextStyle(color: Color(0xFF2DD4BF), fontSize: 10, fontWeight: FontWeight.bold),
                       ),
+                    ),
+                  if (isMyPost)
+                    PopupMenuButton(
+                      icon: const Icon(Icons.more_vert, color: Colors.white38, size: 20),
+                      color: const Color(0xFF0F172A),
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.redAccent))),
+                      ],
+                      onSelected: (val) {
+                        if (val == 'delete') _deletePost();
+                      },
                     ),
                 ],
               ),
@@ -360,16 +449,16 @@ class _BroPostCardState extends State<BroPostCard> {
                           color: _isLiked ? const Color(0xFF2DD4BF) : Colors.white60,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '$_likesCount',
-                          style: TextStyle(color: _isLiked ? const Color(0xFF2DD4BF) : Colors.white60),
-                        ),
+                        Text('$_likesCount', style: TextStyle(color: _isLiked ? const Color(0xFF2DD4BF) : Colors.white60)),
                       ],
                     ),
                   ),
                   const Spacer(),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () => Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: userId))
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2DD4BF),
                       foregroundColor: Colors.black,
