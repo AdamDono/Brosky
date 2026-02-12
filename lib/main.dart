@@ -1,4 +1,5 @@
 import 'package:bro_app/src/features/auth/presentation/auth_screen.dart';
+import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,14 +58,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Simulate loading time then navigate
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const AuthScreen()),
-        );
-      }
-    });
+    _redirect();
+  }
+
+  Future<void> _redirect() async {
+    await Future.delayed(const Duration(seconds: 3));
+    if (!mounted) return;
+
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const AuthScreen()),
+      );
+    }
   }
 
   @override

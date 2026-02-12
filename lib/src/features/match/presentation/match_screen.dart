@@ -1,5 +1,7 @@
+import 'package:bro_app/src/core/services/location_service.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -14,33 +16,62 @@ class _MatchScreenState extends State<MatchScreen> {
   double _searchRadius = 25.0; // km
   bool _isLoading = true;
   List<Map<String, dynamic>> _nearbyBros = [];
+  Position? _myPosition;
 
   @override
   void initState() {
     super.initState();
-    _fetchNearbyBros();
+    _refreshRadar();
   }
 
-  Future<void> _fetchNearbyBros() async {
+  Future<void> _refreshRadar() async {
     setState(() => _isLoading = true);
+    
+    // 1. Get my current real-world location
+    _myPosition = await LocationService.updateLocation();
+    
+    // 2. Fetch all other bros from Supabase
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
     try {
-      // Fetch all profiles that aren't me
-      // Note: In a real app, we'd use a PostGIS query in Supabase to only fetch within radius.
-      // For now, we fetch and show how we'll sort them.
       final response = await Supabase.instance.client
           .from('profiles')
           .select()
           .neq('id', user.id);
 
+      final allBros = List<Map<String, dynamic>>.from(response);
+      
+      // 3. Filter and calculate real distance
+      List<Map<String, dynamic>> filteredBros = [];
+      
+      if (_myPosition != null) {
+        for (var bro in allBros) {
+          if (bro['last_lat'] != null && bro['last_long'] != null) {
+            double distance = LocationService.calculateDistance(
+              _myPosition!.latitude, 
+              _myPosition!.longitude, 
+              bro['last_lat'], 
+              bro['last_long']
+            );
+            
+            if (distance <= _searchRadius) {
+              bro['real_distance'] = distance;
+              filteredBros.add(bro);
+            }
+          }
+        }
+        // Sort by closest first
+        filteredBros.sort((a, b) => (a['real_distance'] as double).compareTo(b['real_distance'] as double));
+      }
+
       setState(() {
-        _nearbyBros = List<Map<String, dynamic>>.from(response);
+        _nearbyBros = filteredBros;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching bros: $e');
+      setState(() => _nearbyBros = []);
       setState(() => _isLoading = false);
     }
   }
@@ -55,7 +86,7 @@ class _MatchScreenState extends State<MatchScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: _fetchNearbyBros,
+            onPressed: _refreshRadar,
             icon: const Icon(Icons.radar, color: Color(0xFF2DD4BF)),
           ),
         ],
@@ -95,21 +126,28 @@ class _MatchScreenState extends State<MatchScreen> {
                     activeTrackColor: const Color(0xFF2DD4BF),
                     inactiveTrackColor: Colors.white10,
                     thumbColor: const Color(0xFF2DD4BF),
-                    overlayColor: const Color(0xFF2DD4BF).withOpacity(0.2),
                     trackHeight: 2,
                   ),
                   child: Slider(
                     value: _searchRadius,
-                    min: 5,
-                    max: 500,
+                    min: 1,
+                    max: 100,
                     onChanged: (val) {
                       setState(() => _searchRadius = val);
                     },
                     onChangeEnd: (val) {
-                      _fetchNearbyBros();
+                      _refreshRadar();
                     },
                   ),
                 ),
+                if (_myPosition == null && !_isLoading)
+                   const Padding(
+                     padding: EdgeInsets.only(top: 8.0),
+                     child: Text(
+                       '⚠️ Location disabled. Please enable GPS for radar.',
+                       style: TextStyle(color: Colors.orangeAccent, fontSize: 10),
+                     ),
+                   ),
               ],
             ),
           ),
@@ -139,13 +177,31 @@ class _MatchScreenState extends State<MatchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.explore_outlined, size: 64, color: Colors.white10),
-          const SizedBox(height: 16),
-          Text(
-            'No bros found in this radius.\nExpand your search, Bro.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16),
+          Icon(
+            _myPosition == null ? Icons.location_off_outlined : Icons.explore_outlined, 
+            size: 64, 
+            color: Colors.white10
           ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              _myPosition == null 
+                ? 'Bro, we need your GPS Signal. 🛰️\n1. Use http://localhost:8080\n2. Hit "Allow" on the popup.'
+                : 'No huddles in this radius yet.\nExpand your search or start one!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(color: Colors.white38, fontSize: 14, height: 1.5),
+            ),
+          ),
+          if (_myPosition == null)
+            Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: TextButton.icon(
+                onPressed: _refreshRadar,
+                icon: const Icon(Icons.refresh, color: Color(0xFF2DD4BF)),
+                label: const Text('RETRY RADAR', style: TextStyle(color: Color(0xFF2DD4BF))),
+              ),
+            ),
         ],
       ),
     );
@@ -155,8 +211,7 @@ class _MatchScreenState extends State<MatchScreen> {
     final avatarUrl = bro['avatar_url'];
     final username = bro['username'] ?? 'Bro';
     final vibes = List<String>.from(bro['vibes'] ?? []);
-    // Mocked distance for UI demo
-    final mockDistance = (bro['username']?.length ?? 5) * 1.5;
+    final distance = bro['real_distance'] as double? ?? 0.0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -181,7 +236,9 @@ class _MatchScreenState extends State<MatchScreen> {
             ),
             const Spacer(),
             Text(
-              '${mockDistance.toStringAsFixed(1)}km',
+              distance < 1.0 
+                ? '${(distance * 1000).round()}m' 
+                : '${distance.toStringAsFixed(1)}km',
               style: const TextStyle(color: Color(0xFF2DD4BF), fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ],
