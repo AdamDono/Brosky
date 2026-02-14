@@ -1,5 +1,6 @@
 import 'package:bro_app/src/core/services/location_service.dart';
 import 'package:bro_app/src/features/huddles/presentation/create_huddle_modal.dart';
+import 'package:bro_app/src/features/huddles/presentation/huddle_chat_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -200,8 +201,14 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
           ],
         ),
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Chat messaging coming next! 🗣️⚡️')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) => HuddleChatScreen(
+                huddleId: huddle['id'],
+                huddleName: huddle['name'],
+              ),
+            ),
           );
         },
       ),

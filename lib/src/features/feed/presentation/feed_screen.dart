@@ -1,3 +1,4 @@
+import 'package:bro_app/src/features/chat/presentation/requests_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -81,6 +82,10 @@ class _FeedScreenState extends State<FeedScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          IconButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const RequestsScreen())),
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          ),
           IconButton(
             onPressed: _handleRefresh,
             icon: const Icon(Icons.refresh, color: Color(0xFF2DD4BF)),

@@ -185,13 +185,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
             
             const SizedBox(height: 32),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildStat('Bros', '142'),
-                _buildStat('Huddles', '28'),
-                _buildStat('Vibe', '98%'),
-              ],
+            // --- Dynamic Stats Row ---
+            FutureBuilder<List<dynamic>>(
+              future: Future.wait([
+                // 1. Bros Count (Accepted Conversations)
+                Supabase.instance.client
+                    .from('conversations')
+                    .select('id')
+                    .or('user1_id.eq.${Supabase.instance.client.auth.currentUser?.id},user2_id.eq.${Supabase.instance.client.auth.currentUser?.id}')
+                    .eq('status', 'accepted'),
+                
+                // 2. Huddles Count
+                Supabase.instance.client
+                    .from('huddle_members')
+                    .select('id')
+                    .eq('user_id', Supabase.instance.client.auth.currentUser!.id),
+
+                // 3. Posts Count
+                Supabase.instance.client
+                    .from('bro_posts')
+                    .select('id')
+                    .eq('user_id', Supabase.instance.client.auth.currentUser!.id),
+              ]),
+              builder: (ctx, snapshot) {
+                final connections = (snapshot.data?[0] as List?)?.length ?? 0;
+                final huddles = (snapshot.data?[1] as List?)?.length ?? 0;
+                final posts = (snapshot.data?[2] as List?)?.length ?? 0;
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStat('Bros', connections.toString()),
+                    _buildStat('Huddles', huddles.toString()),
+                    _buildStat('Posts', posts.toString()),
+                  ],
+                );
+              },
             ),
             
             const SizedBox(height: 32),
