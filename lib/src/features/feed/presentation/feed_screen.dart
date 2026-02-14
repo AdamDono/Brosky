@@ -35,6 +35,8 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   void _initStream() {
+    final twentyFourHoursAgo = DateTime.now().subtract(const Duration(hours: 24));
+
     _postsStream = Supabase.instance.client
         .from('bro_posts')
         .stream(primaryKey: ['id'])
@@ -42,6 +44,12 @@ class _FeedScreenState extends State<FeedScreen> {
         .map((data) {
           var list = List<Map<String, dynamic>>.from(data);
           
+          // 4. Filter by 24h Expiry
+          list = list.where((post) {
+            final createdAt = DateTime.parse(post['created_at']);
+            return createdAt.isAfter(twentyFourHoursAgo);
+          }).toList();
+
           // 1. Filter by Vibe
           if (_selectedFilter != 'All') {
             list = list.where((post) => post['vibe'] == _selectedFilter).toList();
@@ -398,17 +406,38 @@ class _BroPostCardState extends State<BroPostCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(username, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                          Text(
-                            '${timeago.format(createdAt)} • 1.2km away',
-                            style: const TextStyle(color: Colors.white38, fontSize: 12),
+                          Text(username, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+                          const SizedBox(height: 2),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                '${timeago.format(createdAt)} • 1.2km',
+                                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.orangeAccent.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${24 - DateTime.now().difference(createdAt).inHours}h left',
+                                  style: const TextStyle(color: Colors.orangeAccent, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   if (widget.post['vibe'] != null)
                     Container(
+                      constraints: const BoxConstraints(maxWidth: 100),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFF2DD4BF).withOpacity(0.1),
@@ -416,11 +445,13 @@ class _BroPostCardState extends State<BroPostCard> {
                       ),
                       child: Text(
                         widget.post['vibe'],
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: Color(0xFF2DD4BF), fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ),
                   if (isMyPost)
                     PopupMenuButton(
+                      padding: EdgeInsets.zero,
                       icon: const Icon(Icons.more_vert, color: Colors.white38, size: 20),
                       color: const Color(0xFF0F172A),
                       itemBuilder: (ctx) => [
@@ -435,7 +466,7 @@ class _BroPostCardState extends State<BroPostCard> {
               const SizedBox(height: 16),
               Text(
                 widget.post['content'] ?? '',
-                style: GoogleFonts.outfit(fontSize: 16, height: 1.4),
+                style: GoogleFonts.outfit(fontSize: 15, height: 1.5, color: Colors.white.withOpacity(0.9)),
               ),
               const SizedBox(height: 20),
               Row(
@@ -444,21 +475,19 @@ class _BroPostCardState extends State<BroPostCard> {
                   const SizedBox(width: 8),
                   const Text('0', style: TextStyle(color: Colors.white60)),
                   const SizedBox(width: 24),
-                  GestureDetector(
-                    onTap: _toggleLike,
+                  
+                  // --- Reaction Engine ---
+                  Expanded(
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Icon(
-                          _isLiked ? Icons.favorite : Icons.favorite_border,
-                          size: 20,
-                          color: _isLiked ? const Color(0xFF2DD4BF) : Colors.white60,
-                        ),
-                        const SizedBox(width: 8),
-                        Text('$_likesCount', style: TextStyle(color: _isLiked ? const Color(0xFF2DD4BF) : Colors.white60)),
+                        _buildReactionButton('👊'),
+                        _buildReactionButton('🔥'),
+                        _buildReactionButton('💯'),
                       ],
                     ),
                   ),
-                  const Spacer(),
+
                   ElevatedButton(
                     onPressed: () => Navigator.push(
                       context, 
@@ -478,6 +507,25 @@ class _BroPostCardState extends State<BroPostCard> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildReactionButton(String emoji) {
+    return GestureDetector(
+      onTap: () {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+           content: Text('Vibed with $emoji! (Syncing soon...)'),
+           duration: const Duration(milliseconds: 500),
+         ));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(emoji, style: const TextStyle(fontSize: 16)),
+      ),
     );
   }
 }

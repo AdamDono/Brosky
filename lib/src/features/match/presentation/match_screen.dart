@@ -17,6 +17,15 @@ class _MatchScreenState extends State<MatchScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _nearbyBros = [];
   Position? _myPosition;
+  String _selectedVibe = 'All';
+
+  final List<String> _vibes = [
+    'All',
+    'Sports & Fitness',
+    'Gaming & Culture',
+    'Life & Real Talk',
+    'Business & Hustle',
+  ];
 
   @override
   void initState() {
@@ -35,11 +44,15 @@ class _MatchScreenState extends State<MatchScreen> {
     if (user == null) return;
 
     try {
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .neq('id', user.id);
+      var query = Supabase.instance.client.from('profiles').select().neq('id', user.id);
+      
+      // Filter by vibe if not 'All'
+      // Note: Vibes is an array in DB, so we use 'cs' (contains)
+      if (_selectedVibe != 'All') {
+        query = query.contains('vibes', [_selectedVibe]);
+      }
 
+      final response = await query;
       final allBros = List<Map<String, dynamic>>.from(response);
       
       // 3. Filter and calculate real distance
@@ -71,8 +84,10 @@ class _MatchScreenState extends State<MatchScreen> {
       });
     } catch (e) {
       debugPrint('Error fetching bros: $e');
-      setState(() => _nearbyBros = []);
-      setState(() => _isLoading = false);
+      setState(() {
+        _nearbyBros = [];
+        _isLoading = false;
+      });
     }
   }
 
@@ -93,6 +108,41 @@ class _MatchScreenState extends State<MatchScreen> {
       ),
       body: Column(
         children: [
+          // --- Vibe Selector ---
+          Container(
+            height: 60,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _vibes.length,
+              itemBuilder: (context, index) {
+                final vibe = _vibes[index];
+                final isSelected = _selectedVibe == vibe;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    selected: isSelected,
+                    label: Text(vibe, style: GoogleFonts.outfit(
+                      color: isSelected ? Colors.black : Colors.white60,
+                      fontSize: 12,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    )),
+                    backgroundColor: const Color(0xFF1E293B),
+                    selectedColor: const Color(0xFF2DD4BF),
+                    checkmarkColor: Colors.black,
+                    onSelected: (selected) {
+                      setState(() => _selectedVibe = vibe);
+                      _refreshRadar();
+                    },
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              },
+            ),
+          ),
+
           // --- Distance Slider Section ---
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -155,7 +205,7 @@ class _MatchScreenState extends State<MatchScreen> {
           // --- Bros List ---
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)))
+                ? _buildPulsingRadar()
                 : _nearbyBros.isEmpty
                     ? _buildEmptyState()
                     : ListView.builder(
@@ -166,6 +216,52 @@ class _MatchScreenState extends State<MatchScreen> {
                           return _buildBroCard(bro);
                         },
                       ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPulsingRadar() {
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Hypnotic rings
+          ...List.generate(3, (index) {
+            return TweenAnimationBuilder(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: Duration(milliseconds: 1500 + (index * 500)),
+              onEnd: () {}, // Handled by loop below if using AnimationController
+              builder: (context, double value, child) {
+                // Since TweenAnimationBuilder doesn't loop easily without a key change, 
+                // I'll use a simpler persistent animation approach or just a nice pulsing icon.
+                return Container();
+              },
+            );
+          }),
+          // Let's use a simpler, reliable pulsing effect for Flutter Web
+          _PulsingRing(color: const Color(0xFF2DD4BF)),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.radar, size: 60, color: Color(0xFF2DD4BF)),
+              const SizedBox(height: 24),
+              Text(
+                'SCANNING FOR BROS...',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF2DD4BF),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                  fontSize: 12
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Vibe: $_selectedVibe',
+                style: const TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+            ],
           ),
         ],
       ),
@@ -281,6 +377,53 @@ class _MatchScreenState extends State<MatchScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _PulsingRing extends StatefulWidget {
+  final Color color;
+  const _PulsingRing({required this.color});
+
+  @override
+  State<_PulsingRing> createState() => _PulsingRingState();
+}
+
+class _PulsingRingState extends State<_PulsingRing> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: 200 * _controller.value,
+          height: 200 * _controller.value,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: widget.color.withOpacity(1 - _controller.value),
+              width: 2,
+            ),
+          ),
+        );
+      },
     );
   }
 }
