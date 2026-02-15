@@ -1,98 +1,112 @@
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
+import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+// Note: This is the Unified BroPostCard used across the app (Feed and Details)
 class BroPostCard extends StatefulWidget {
   final Map<String, dynamic> post;
-  const BroPostCard({super.key, required this.post});
+  final VoidCallback? onUpdate; // Optional: Force parent to refresh if needed
+
+  const BroPostCard({super.key, required this.post, this.onUpdate});
 
   @override
   State<BroPostCard> createState() => _BroPostCardState();
 }
 
 class _BroPostCardState extends State<BroPostCard> {
-  int _likesCount = 0;
-  bool _isLiked = false;
+  Map<String, int> _reactionCounts = {'👊': 0, '👍': 0, '🔥': 0, '💯': 0, '❤️': 0};
+  String? _myReaction;
+  int _commentCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _fetchLikes();
+    _fetchReactions();
+    _fetchCommentCount();
   }
 
-  Future<void> _fetchLikes() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return;
-
-    try {
-      final likesResponse = await Supabase.instance.client
-          .from('post_likes')
-          .select('id')
-          .eq('post_id', widget.post['id']);
-      
-      final userLikeResponse = await Supabase.instance.client
-          .from('post_likes')
-          .select()
-          .eq('post_id', widget.post['id'])
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-      if (mounted) {
-        setState(() {
-          _likesCount = likesResponse.length;
-          _isLiked = userLikeResponse != null;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching likes: $e');
+  @override
+  void didUpdateWidget(BroPostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post['id'] != widget.post['id'] || 
+        oldWidget.post['content'] != widget.post['content'] ||
+        oldWidget.post['image_url'] != widget.post['image_url']) {
+      _fetchReactions();
+      _fetchCommentCount();
     }
   }
 
-  Future<void> _toggleLike() async {
+  Future<void> _fetchCommentCount() async {
+    try {
+      final response = await Supabase.instance.client.from('post_comments').select('id').eq('post_id', widget.post['id']);
+      if (mounted) setState(() => _commentCount = (response as List).length);
+    } catch (e) { debugPrint('Error: $e'); }
+  }
+
+  Future<void> _fetchReactions() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
-
-    final originalIsLiked = _isLiked;
-
-    setState(() {
-      _isLiked = !_isLiked;
-      _likesCount = _isLiked ? _likesCount + 1 : _likesCount - 1;
-    });
-
     try {
-      if (originalIsLiked) {
+      final response = await Supabase.instance.client.from('post_likes').select('reaction_type, user_id').eq('post_id', widget.post['id']);
+      final reactions = List<Map<String, dynamic>>.from(response);
+      Map<String, int> counts = {'👊': 0, '👍': 0, '🔥': 0, '💯': 0, '❤️': 0};
+      String? myReact;
+      for (var r in reactions) {
+        final type = r['reaction_type'] ?? '👍';
+        if (counts.containsKey(type)) counts[type] = counts[type]! + 1;
+        if (r['user_id'] == user.id) myReact = type;
+      }
+      if (mounted) setState(() { _reactionCounts = counts; _myReaction = myReact; });
+    } catch (e) { debugPrint('Error: $e'); }
+  }
+
+  Future<void> _handleReaction(String emoji) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    final previousReaction = _myReaction;
+    setState(() {
+      if (previousReaction != null) _reactionCounts[previousReaction] = (_reactionCounts[previousReaction] ?? 1) - 1;
+      if (previousReaction == emoji) { _myReaction = null; } 
+      else { _myReaction = emoji; _reactionCounts[emoji] = (_reactionCounts[emoji] ?? 0) + 1; }
+    });
+    try {
+      if (previousReaction == emoji) {
         await Supabase.instance.client.from('post_likes').delete().eq('post_id', widget.post['id']).eq('user_id', user.id);
       } else {
-        await Supabase.instance.client.from('post_likes').insert({'post_id': widget.post['id'], 'user_id': user.id});
+        await Supabase.instance.client.from('post_likes').upsert({'post_id': widget.post['id'], 'user_id': user.id, 'reaction_type': emoji}, onConflict: 'post_id,user_id');
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLiked = originalIsLiked;
-          _likesCount = _isLiked ? _likesCount + 1 : _likesCount - 1; // Revert
-        });
-      }
+    } catch (e) { _fetchReactions(); }
+  }
+
+  Color _getReactionColor(String emoji) {
+    switch (emoji) {
+      case '👊': return const Color(0xFFD2B48C);
+      case '👍': return Colors.blueAccent;
+      case '🔥': return Colors.redAccent;
+      case '💯': return Colors.white;
+      case '❤️': return Colors.red;
+      default: return Colors.white60;
     }
   }
 
-  Future<void> _deletePost() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Delete Post?', style: TextStyle(color: Colors.white)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.redAccent))),
-        ],
-      )
+  void _showReactionPicker(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox? overlay = Overlay.of(context).context.findRenderObject() as RenderBox?;
+    if (overlay == null) return;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(button.localToGlobal(Offset.zero, ancestor: overlay), button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay)),
+      Offset.zero & overlay.size,
     );
-
-    if (confirm == true) {
-      await Supabase.instance.client.from('bro_posts').delete().eq('id', widget.post['id']);
-    }
+    showMenu<String>(
+      context: context,
+      position: position,
+      color: const Color(0xFF1E293B),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      items: ['👊', '👍', '🔥', '💯', '❤️'].map((e) => PopupMenuItem(value: e, child: Center(child: Text(e, style: const TextStyle(fontSize: 24))))).toList(),
+    ).then((value) { if (value != null) _handleReaction(value); });
   }
 
   @override
@@ -101,8 +115,17 @@ class _BroPostCardState extends State<BroPostCard> {
     final createdAt = DateTime.parse(widget.post['created_at']);
     final isMyPost = userId == Supabase.instance.client.auth.currentUser?.id;
 
+    int totalReactions = 0;
+    String topEmoji = '👍';
+    int maxCount = -1;
+    _reactionCounts.forEach((emoji, count) {
+      totalReactions += count;
+      if (count > maxCount) { maxCount = count; topEmoji = emoji; }
+    });
+    if (totalReactions == 0) topEmoji = '👍';
+
     return FutureBuilder<Map<String, dynamic>>(
-      future: Supabase.instance.client.from('profiles').select().eq('id', userId).single(),
+      future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single(),
       builder: (context, snapshot) {
         final profile = snapshot.data;
         final username = profile?['username'] ?? 'Bro';
@@ -120,59 +143,92 @@ class _BroPostCardState extends State<BroPostCard> {
                   GestureDetector(
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: userId))),
                     child: CircleAvatar(
+                      radius: 18,
                       backgroundColor: const Color(0xFF2DD4BF),
                       backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl == null ? const Icon(Icons.person, color: Colors.black) : null,
+                      child: avatarUrl == null ? const Icon(Icons.person, color: Colors.black, size: 20) : null,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: userId))),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(username, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                          Text('${timeago.format(createdAt)} • 1.2km away', style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                        ],
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(username, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text('${timeago.format(createdAt)} • Local', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                      ],
                     ),
                   ),
-                  if (widget.post['vibe'] != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: const Color(0xFF2DD4BF).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                      child: Text(widget.post['vibe'], style: const TextStyle(color: Color(0xFF2DD4BF), fontSize: 10, fontWeight: FontWeight.bold)),
-                    ),
-                  if (isMyPost)
-                    PopupMenuButton(
-                      icon: const Icon(Icons.more_vert, color: Colors.white38, size: 20),
-                      color: const Color(0xFF0F172A),
-                      itemBuilder: (ctx) => [const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.redAccent)))],
-                      onSelected: (val) { if (val == 'delete') _deletePost(); },
+                  if (isMyPost) 
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert, color: Colors.white24, size: 20),
+                      onSelected: (value) async {
+                        if (value == 'delete') {
+                          final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+                            backgroundColor: const Color(0xFF1E293B),
+                            title: const Text('Delete Post?', style: TextStyle(color: Colors.white)),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.redAccent))),
+                            ],
+                          ));
+                          if (confirm == true) {
+                            await Supabase.instance.client.from('bro_posts').delete().eq('id', widget.post['id']);
+                            if (widget.onUpdate != null) widget.onUpdate!();
+                          }
+                        } else if (value == 'edit') {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (ctx) => CreatePostModal(initialPost: widget.post),
+                          ).then((_) { if (widget.onUpdate != null) widget.onUpdate!(); });
+                        }
+                      },
+                      color: const Color(0xFF1E293B),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(children: [const Icon(Icons.edit_outlined, size: 18), const SizedBox(width: 12), const Text('Edit Post')]),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(children: [const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent), const SizedBox(width: 12), const Text('Delete Post', style: TextStyle(color: Colors.redAccent))]),
+                        ),
+                      ],
                     ),
                 ],
               ),
               const SizedBox(height: 16),
-              Text(widget.post['content'] ?? '', style: GoogleFonts.outfit(fontSize: 16, height: 1.4)),
+              if (widget.post['image_url'] != null)
+                Container(
+                  height: 250,
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), image: DecorationImage(image: NetworkImage(widget.post['image_url']), fit: BoxFit.cover)),
+                ),
+              Text(widget.post['content'] ?? '', style: GoogleFonts.outfit(fontSize: 15, height: 1.5, color: Colors.white.withOpacity(0.9))),
               const SizedBox(height: 20),
               Row(
                 children: [
-                  const Icon(Icons.chat_bubble_outline, size: 20, color: Colors.white60),
+                  const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.white38),
                   const SizedBox(width: 8),
-                  const Text('0', style: TextStyle(color: Colors.white60)),
+                  Text('$_commentCount', style: const TextStyle(color: Colors.white38, fontSize: 13)),
                   const SizedBox(width: 24),
                   GestureDetector(
-                    onTap: _toggleLike,
+                    onTap: () { if (_myReaction != null) _handleReaction(_myReaction!); else _showReactionPicker(context); },
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(_isLiked ? Icons.favorite : Icons.favorite_border, size: 20, color: _isLiked ? const Color(0xFF2DD4BF) : Colors.white60),
-                        const SizedBox(width: 8),
-                        Text('$_likesCount', style: TextStyle(color: _isLiked ? const Color(0xFF2DD4BF) : Colors.white60)),
+                        Text(topEmoji, style: TextStyle(fontSize: 18, color: _myReaction != null ? _getReactionColor(topEmoji) : Colors.white24)),
+                        const SizedBox(width: 6),
+                        Text('$totalReactions', style: TextStyle(color: _myReaction != null ? _getReactionColor(topEmoji) : Colors.white24, fontSize: 13, fontWeight: _myReaction != null ? FontWeight.bold : FontWeight.normal)),
                       ],
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 16),
+                  if (_myReaction == null) GestureDetector(onTap: () => _showReactionPicker(context), child: const Icon(Icons.add_reaction_outlined, size: 18, color: Colors.white24)),
                 ],
               ),
             ],
