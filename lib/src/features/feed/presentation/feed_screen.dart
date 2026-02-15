@@ -96,144 +96,137 @@ class _FeedScreenState extends State<FeedScreen> {
     await _fetchLocationThenStream();
   }
 
-  void _showCreatePost() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const CreatePostModal(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Brotherhood Feed', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<double>(
-            icon: const Icon(Icons.location_on, color: Color(0xFF2DD4BF), size: 22),
-            onSelected: (radius) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (val) {
               setState(() {
-                _selectedRadius = radius;
+                _searchQuery = val;
                 _initStream();
               });
             },
-            offset: const Offset(0, 40),
-            color: const Color(0xFF1E293B),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            itemBuilder: (context) => _radii.map((r) => PopupMenuItem(
-              value: r,
-              child: Text('${r.toInt()} km', style: TextStyle(
-                color: _selectedRadius == r ? const Color(0xFF2DD4BF) : Colors.white,
-                fontWeight: _selectedRadius == r ? FontWeight.bold : FontWeight.normal,
-              )),
-            )).toList(),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Search keywords, vibes, bros...',
+              hintStyle: const TextStyle(color: Colors.white24),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF2DD4BF)),
+              suffixIcon: _searchQuery.isNotEmpty 
+                ? IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.white38),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() { _searchQuery = ''; _initStream(); });
+                    },
+                  )
+                : null,
+              filled: true,
+              fillColor: const Color(0xFF1E293B),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            ),
           ),
-          IconButton(
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (c) => const RequestsScreen())),
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+        ),
+        _buildRadiusSelector(),
+        _buildFilterBar(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: const Color(0xFF2DD4BF),
+            backgroundColor: const Color(0xFF0F172A),
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _postsStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) return Center(child: Text('Stream Error: ${snapshot.error}', style: const TextStyle(color: Colors.white60)));
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
+                final posts = snapshot.data!;
+                if (posts.isEmpty) {
+                  return ListView(
+                    children: [
+                      SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                      const Icon(Icons.search_off, size: 64, color: Colors.white10),
+                      const SizedBox(height: 16),
+                      Text(_searchQuery.isNotEmpty ? 'No posts matching \"$_searchQuery\"' : 'The feed is quiet, Bro.', textAlign: TextAlign.center, style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16)),
+                    ],
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: posts.length,
+                  itemBuilder: (context, index) {
+                    final post = posts[index];
+                    final userId = post['user_id'];
+                    return GestureDetector(
+                      onTap: () async {
+                        final profile = await Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single();
+                        if (mounted) {
+                          Navigator.push(context, MaterialPageRoute(builder: (ctx) => PostDetailScreen(
+                            post: post,
+                            username: profile['username'] ?? 'Bro',
+                            avatarUrl: profile['avatar_url'],
+                            onUpdate: () => _handleRefresh(),
+                          )));
+                        }
+                      },
+                      child: BroPostCard(
+                        key: ValueKey(post['id']),
+                        post: post,
+                        onUpdate: () => _handleRefresh(),
+                      ),
+                    );
+                  }
+                );
+              },
+            ),
           ),
-          IconButton(
-            onPressed: _handleRefresh,
-            icon: const Icon(Icons.refresh, color: Color(0xFF2DD4BF)),
-          ),
-        ],
-      ),
-      body: Column(
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRadiusSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: TextField(
-              controller: _searchController,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'SEARCH RADIUS',
+                style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.5),
+              ),
+              Text(
+                '${_selectedRadius.round()} km',
+                style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: const Color(0xFF2DD4BF)),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: const Color(0xFF2DD4BF),
+              inactiveTrackColor: Colors.white10,
+              thumbColor: const Color(0xFF2DD4BF),
+              trackHeight: 2,
+            ),
+            child: Slider(
+              value: _selectedRadius,
+              min: 5,
+              max: 500,
               onChanged: (val) {
                 setState(() {
-                  _searchQuery = val;
+                  _selectedRadius = val;
                   _initStream();
                 });
               },
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search keywords, vibes, bros...',
-                hintStyle: const TextStyle(color: Colors.white24),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF2DD4BF)),
-                suffixIcon: _searchQuery.isNotEmpty 
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.white38),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() { _searchQuery = ''; _initStream(); });
-                      },
-                    )
-                  : null,
-                filled: true,
-                fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              ),
-            ),
-          ),
-          _buildFilterBar(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _handleRefresh,
-              color: const Color(0xFF2DD4BF),
-              backgroundColor: const Color(0xFF0F172A),
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: _postsStream,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) return Center(child: Text('Stream Error: ${snapshot.error}', style: const TextStyle(color: Colors.white60)));
-                  if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
-                  final posts = snapshot.data!;
-                  if (posts.isEmpty) {
-                    return ListView(
-                      children: [
-                        SizedBox(height: MediaQuery.of(context).size.height * 0.2),
-                        const Icon(Icons.search_off, size: 64, color: Colors.white10),
-                        const SizedBox(height: 16),
-                        Text(_searchQuery.isNotEmpty ? 'No posts matching "$_searchQuery"' : 'The feed is quiet, Bro.', textAlign: TextAlign.center, style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16)),
-                      ],
-                    );
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) {
-                      final post = posts[index];
-                      final userId = post['user_id'];
-                      return GestureDetector(
-                        onTap: () async {
-                          // Fetch profile data for detail screen
-                          final profile = await Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single();
-                          if (mounted) {
-                            Navigator.push(context, MaterialPageRoute(builder: (ctx) => PostDetailScreen(
-                              post: post,
-                              username: profile['username'] ?? 'Bro',
-                              avatarUrl: profile['avatar_url'],
-                              onUpdate: () => _handleRefresh(),
-                            )));
-                          }
-                        },
-                        child: BroPostCard(
-                          key: ValueKey(post['id']),
-                          post: post,
-                          onUpdate: () => _handleRefresh(),
-                        ),
-                      );
-                    }
-                  );
-                },
-              ),
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreatePost,
-        backgroundColor: const Color(0xFF2DD4BF),
-        child: const Icon(Icons.add, color: Colors.black, size: 30),
       ),
     );
   }
@@ -390,7 +383,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     builder: (ctx) => CreatePostModal(initialPost: widget.post),
                   ).then((_) { 
                     widget.onUpdate();
-                    // We need to fetch local changes if we came back from edit
                     _fetchReactions();
                   });
                 }

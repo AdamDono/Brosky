@@ -1,4 +1,5 @@
-import 'package:bro_app/src/features/chat/presentation/chat_screen.dart';
+import 'package:bro_app/src/features/chat/presentation/direct_chat_screen.dart';
+
 import 'package:bro_app/src/features/feed/presentation/widgets/bro_post_card.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -23,51 +24,20 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
     if (myId == otherId) return;
 
-    try {
-      // Fetch the conversation between these two users
-      final conversation = await Supabase.instance.client
-          .from('conversations')
-          .select()
-          .or('and(user1_id.eq.$myId,user2_id.eq.$otherId),and(user1_id.eq.$otherId,user2_id.eq.$myId)')
-          .maybeSingle();
-
-      if (conversation == null) {
-        await Supabase.instance.client.from('conversations').insert({
-          'user1_id': myId,
-          'user2_id': otherId,
-          'status': 'pending',
-          'initiator_id': myId,
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connection request sent! ⚡️')));
-          _refreshData();
-        }
-      } else {
-        final status = conversation['status'] as String? ?? 'accepted';
-        
-        if (status == 'accepted') {
-          if (!mounted) return;
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => ChatScreen(
-                conversationId: conversation['id'],
-                otherUserId: otherId,
-                otherUserName: userProfile['username'] ?? 'Bro',
-                otherUserAvatar: userProfile['avatar_url'],
-              ),
-            ),
-          );
-        } else if (status == 'pending') {
-           if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request is pending.')));
-           }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error in _handleConnection: $e');
-    }
+    // Simply open the direct chat screen
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => DirectChatScreen(
+          partnerId: otherId,
+          partnerUsername: userProfile['username'] ?? 'Bro',
+          partnerAvatar: userProfile['avatar_url'],
+        ),
+      ),
+    );
   }
+
 
   late Future<List<dynamic>> _profileFuture;
   Map<String, dynamic>? _optimisticConversation;
