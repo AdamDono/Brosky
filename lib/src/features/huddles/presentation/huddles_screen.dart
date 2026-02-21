@@ -127,12 +127,34 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
 
   Widget _buildHuddleCard(Map<String, dynamic> huddle) {
     final distance = huddle['distance'] as double? ?? 0.0;
+    
+    int memberCount = 0;
+    if (huddle['huddle_members'] != null && (huddle['huddle_members'] as List).isNotEmpty) {
+      memberCount = huddle['huddle_members'][0]['count'] ?? 0;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(20)),
       child: ListTile(
         title: Text(huddle['name'], style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
         subtitle: Text('${distance.toStringAsFixed(1)}km away', style: const TextStyle(color: Colors.white38)),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F172A),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF2DD4BF).withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.people, color: Color(0xFF2DD4BF), size: 16),
+              const SizedBox(width: 4),
+              Text('$memberCount', style: GoogleFonts.outfit(color: const Color(0xFF2DD4BF), fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
         onTap: () {
           Navigator.push(context, MaterialPageRoute(builder: (ctx) => HuddleChatScreen(huddleId: huddle['id'], huddleName: huddle['name'])));
         },

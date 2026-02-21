@@ -1,6 +1,9 @@
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
@@ -22,6 +25,8 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
+  XFile? _imageFile;
+  final _picker = ImagePicker();
 
   @override
   void initState() {
@@ -31,38 +36,52 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
 
   Future<void> _joinHuddle() async {
     final userId = Supabase.instance.client.auth.currentUser!.id;
-    // Check if member, if not, join.
-    final memberCheck = await Supabase.instance.client
-        .from('huddle_members')
-        .select()
-        .eq('huddle_id', widget.huddleId)
-        .eq('user_id', userId)
-        .maybeSingle();
-
+    final memberCheck = await Supabase.instance.client.from('huddle_members').select().eq('huddle_id', widget.huddleId).eq('user_id', userId).maybeSingle();
     if (memberCheck == null) {
-      await Supabase.instance.client.from('huddle_members').insert({
-        'huddle_id': widget.huddleId,
-        'user_id': userId,
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Joined the Huddle! 🏟️')));
-      }
+      await Supabase.instance.client.from('huddle_members').insert({'huddle_id': widget.huddleId, 'user_id': userId});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Joined the Huddle! 🏟️')));
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (image != null) {
+      setState(() => _imageFile = image);
     }
   }
 
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _imageFile == null) return;
 
     setState(() => _isSending = true);
     try {
       final userId = Supabase.instance.client.auth.currentUser!.id;
+      String? imageUrl;
+
+      if (_imageFile != null) {
+        final bytes = await _imageFile!.readAsBytes();
+        final fileExt = kIsWeb ? 'jpg' : _imageFile!.path.split('.').last;
+        final fileName = 'huddle_${widget.huddleId}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+        
+        await Supabase.instance.client.storage.from('post_images').uploadBinary(
+          fileName,
+          bytes,
+          fileOptions: FileOptions(contentType: _imageFile!.mimeType, upsert: true),
+        );
+
+        imageUrl = Supabase.instance.client.storage.from('post_images').getPublicUrl(fileName);
+      }
+
       await Supabase.instance.client.from('huddle_messages').insert({
         'huddle_id': widget.huddleId,
         'user_id': userId,
-        'content': text,
+        'content': text.isEmpty ? "" : text, // Send empty string instead of null to be safe
+        'image_url': imageUrl,
       });
+      
       _messageController.clear();
+      setState(() => _imageFile = null);
       _scrollToBottom();
     } catch (e) {
       debugPrint('Error sending: $e');
@@ -148,6 +167,36 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
               },
             ),
           ),
+          if (_imageFile != null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: const Color(0xFF1E293B),
+              child: Stack(
+                children: [
+                   ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      _imageFile!.path,
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _imageFile = null),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: const BoxDecoration(
@@ -156,6 +205,10 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
             ),
             child: Row(
               children: [
+                IconButton(
+                  icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFF2DD4BF)),
+                  onPressed: _pickImage,
+                ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
@@ -248,7 +301,7 @@ class _HuddleMessageBubble extends StatelessWidget {
                         ),
                       ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: isMe ? const Color(0xFF2DD4BF) : const Color(0xFF334155),
                         borderRadius: BorderRadius.only(
@@ -258,12 +311,40 @@ class _HuddleMessageBubble extends StatelessWidget {
                           bottomRight: Radius.circular(isMe ? 4 : 20),
                         ),
                       ),
-                      child: Text(
-                        message['content'] ?? '',
-                        style: GoogleFonts.outfit(
-                          color: isMe ? Colors.black : Colors.white,
-                          fontSize: 15,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (message['image_url'] != null)
+                             Padding(
+                               padding: const EdgeInsets.only(bottom: 4),
+                               child: ClipRRect(
+                                 borderRadius: BorderRadius.circular(16),
+                                 child: Image.network(
+                                   message['image_url'],
+                                   fit: BoxFit.cover,
+                                   loadingBuilder: (context, child, loadingProgress) {
+                                     if (loadingProgress == null) return child;
+                                     return const SizedBox(
+                                       width: 200,
+                                       height: 200,
+                                       child: Center(child: CircularProgressIndicator(color: Colors.white24)),
+                                     );
+                                   },
+                                 ),
+                               ),
+                             ),
+                          if (message['content'] != null && message['content'].isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Text(
+                                message['content'],
+                                style: GoogleFonts.outfit(
+                                  color: isMe ? Colors.black : Colors.white,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 4),

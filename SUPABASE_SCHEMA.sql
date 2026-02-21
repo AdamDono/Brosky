@@ -168,3 +168,49 @@ CREATE POLICY "Users can delete their own posts." ON public.bro_posts
 
 -- 13. Add 'vibe' column if it doesn't exist
 ALTER TABLE public.bro_posts ADD COLUMN IF NOT EXISTS vibe TEXT DEFAULT 'General';
+
+-- 14. Huddles Table
+CREATE TABLE IF NOT EXISTS public.huddles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  vibe TEXT NOT NULL DEFAULT 'General',
+  lat FLOAT NOT NULL,
+  long FLOAT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 15. Huddle Members
+CREATE TABLE IF NOT EXISTS public.huddle_members (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  huddle_id UUID REFERENCES public.huddles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(huddle_id, user_id)
+);
+
+-- 16. Huddle Messages
+CREATE TABLE IF NOT EXISTS public.huddle_messages (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  huddle_id UUID REFERENCES public.huddles(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  content TEXT,
+  image_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.huddles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.huddle_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.huddle_messages ENABLE ROW LEVEL SECURITY;
+
+-- Policies for Huddles (simplified for MVP)
+CREATE POLICY "Huddles are viewable by everyone." ON public.huddles FOR SELECT USING (true);
+CREATE POLICY "Auth users can create huddles." ON public.huddles FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Policies for Members
+CREATE POLICY "Members are viewable by everyone." ON public.huddle_members FOR SELECT USING (true);
+CREATE POLICY "Users can join huddles." ON public.huddle_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Policies for Messages
+CREATE POLICY "Messages are viewable by everyone." ON public.huddle_messages FOR SELECT USING (true);
+CREATE POLICY "Users can send messages to huddles." ON public.huddle_messages FOR INSERT WITH CHECK (auth.uid() = user_id);
