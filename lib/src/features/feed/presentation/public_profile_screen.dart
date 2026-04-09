@@ -18,24 +18,54 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   // We can keep _handleConnection here or specific button logic. 
   // Let's copy _handleConnection inside.
 
-  Future<void> _handleConnection(BuildContext context, Map<String, dynamic> userProfile) async {
+  Future<void> _handleConnection(BuildContext context, Map<String, dynamic> userProfile, Map<String, dynamic>? currentConversation) async {
     final myId = Supabase.instance.client.auth.currentUser!.id;
     final otherId = userProfile['id'];
 
     if (myId == otherId) return;
 
-    // Simply open the direct chat screen
-    if (!mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => DirectChatScreen(
-          partnerId: otherId,
-          partnerUsername: userProfile['username'] ?? 'Bro',
-          partnerAvatar: userProfile['avatar_url'],
+    // Check if we are already connected (accepted) -> Go to Messages
+    final status = currentConversation?['status'] ?? _optimisticConversation?['status'];
+    if (status == 'accepted') {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (ctx) => DirectChatScreen(
+            partnerId: otherId,
+            partnerUsername: userProfile['username'] ?? 'Bro',
+            partnerAvatar: userProfile['avatar_url'],
+          ),
         ),
-      ),
-    );
+      );
+      return;
+    }
+
+    // Otherwise, it's a Connect request -> Insert into conversations
+    try {
+      final newConversation = {
+        'user1_id': myId,
+        'user2_id': otherId,
+        'status': 'pending',
+        'initiator_id': myId,
+      };
+
+      setState(() {
+        _optimisticConversation = newConversation;
+      });
+
+      await Supabase.instance.client.from('conversations').insert(newConversation);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connection request sent! 👊')));
+        _refreshData();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _optimisticConversation = null);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
 
@@ -216,7 +246,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             Icons.handshake_outlined, 
                             const Color(0xFF2DD4BF), 
                             Colors.black,
-                            () => _handleConnection(context, profile)
+                            () => _handleConnection(context, profile, conversation)
                           )
                         else if (conversation['status'] == 'accepted')
                           Column(
@@ -244,7 +274,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 Icons.chat_bubble_outline, 
                                 Colors.white, 
                                 Colors.black,
-                                () => _handleConnection(context, profile)
+                                () => _handleConnection(context, profile, conversation)
                               ),
                             ],
                           )

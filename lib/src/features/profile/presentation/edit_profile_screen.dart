@@ -43,7 +43,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _usernameController = TextEditingController(text: widget.initialData['username'] ?? '');
     _bioController = TextEditingController(text: widget.initialData['bio'] ?? '');
-    _selectedVibes = List<String>.from(widget.initialData['vibes'] ?? []);
+    
+    // Safely parse vibes which might come back from Supabase as a List<dynamic>
+    final rawVibes = widget.initialData['vibes'];
+    if (rawVibes is List) {
+      _selectedVibes = rawVibes.map((e) => e.toString()).toList();
+    } else {
+      _selectedVibes = [];
+    }
   }
 
   @override
