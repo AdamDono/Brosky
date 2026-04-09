@@ -43,6 +43,9 @@ class BroApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const SplashScreen(),
+      routes: {
+        '/login': (context) => const AuthScreen(),
+      },
     );
   }
 }
