@@ -74,6 +74,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       await Supabase.instance.client.auth.signOut();
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully Signed Out! See you soon, Bro. 👊'),
+            backgroundColor: Color(0xFF2DD4BF),
+          ),
+        );
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const AuthScreen()),
           (route) => false,

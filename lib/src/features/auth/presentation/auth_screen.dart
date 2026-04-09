@@ -87,9 +87,36 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     // Listen for successful login
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       if (data.event == AuthChangeEvent.signedIn && mounted) {
-        _navigateToOnboarding(context);
+        final user = data.session?.user;
+        if (user == null) return;
+
+        try {
+          // Check if they already have vibes set in their profile
+          final profile = await Supabase.instance.client
+              .from('profiles')
+              .select('vibes')
+              .eq('id', user.id)
+              .maybeSingle();
+
+          final vibes = (profile?['vibes'] as List?) ?? [];
+          
+          if (mounted) {
+            if (vibes.isNotEmpty) {
+              // Veteran Bro -> Home
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            } else {
+              // New Bro -> Onboarding
+              _navigateToOnboarding(context);
+            }
+          }
+        } catch (e) {
+          // Fallback to onboarding if profile check fails
+          if (mounted) _navigateToOnboarding(context);
+        }
       }
     });
   }

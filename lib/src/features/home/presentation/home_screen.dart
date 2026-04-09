@@ -54,7 +54,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (confirm == true) {
       await Supabase.instance.client.auth.signOut();
-      if (mounted) Navigator.of(context).pushReplacementNamed('/login');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully Signed Out. See you soon, Bro! 👊'),
+            backgroundColor: Color(0xFF2DD4BF),
+          ),
+        );
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     }
   }
 
