@@ -22,6 +22,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
   XFile? _imageFile;
   String? _existingImageUrl; // For editing
   final _picker = ImagePicker();
+  final Color _tealColor = const Color(0xFF14B8A6);
 
   final List<String> _vibeOptions = [
     'General',
@@ -53,7 +54,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
     if (image != null) {
       setState(() {
         _imageFile = image;
-        _existingImageUrl = null; // New pick replaces old image link
+        _existingImageUrl = null; 
       });
     }
   }
@@ -70,7 +71,6 @@ class _CreatePostModalState extends State<CreatePostModal> {
 
       String? imageUrl = _existingImageUrl;
 
-      // --- Handle Image Upload (Vibe Snap) ---
       if (_imageFile != null) {
         final bytes = await _imageFile!.readAsBytes();
         final fileExt = kIsWeb ? 'jpg' : _imageFile!.path.split('.').last;
@@ -79,7 +79,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
         await Supabase.instance.client.storage.from('post_images').uploadBinary(
           fileName,
           bytes,
-          fileOptions: FileOptions(contentType: _imageFile!.mimeType, upsert: true),
+          fileOptions: FileOptions(contentType: _imageFile!.mimeType ?? 'image/jpeg', upsert: true),
         );
 
         imageUrl = Supabase.instance.client.storage
@@ -88,7 +88,6 @@ class _CreatePostModalState extends State<CreatePostModal> {
       }
 
       if (widget.initialPost == null) {
-        // --- NEW POST ---
         final position = await LocationService.updateLocation();
         await Supabase.instance.client.from('bro_posts').insert({
           'user_id': user.id,
@@ -99,7 +98,6 @@ class _CreatePostModalState extends State<CreatePostModal> {
           if (position != null) 'location_lng': position.longitude,
         });
       } else {
-        // --- UPDATE POST ---
         await Supabase.instance.client.from('bro_posts').update({
           'content': content,
           'vibe': _selectedVibe,
@@ -109,12 +107,6 @@ class _CreatePostModalState extends State<CreatePostModal> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.initialPost == null ? 'Vibe Snap Shared! 🛰️🤝' : 'Vibe Snap Updated! 🛠️🌕'),
-            backgroundColor: const Color(0xFF2DD4BF),
-          ),
-        );
       }
     } catch (e) {
       if (mounted) {
@@ -139,7 +131,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
         right: 24,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFF0F172A),
+        color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
@@ -150,30 +142,29 @@ class _CreatePostModalState extends State<CreatePostModal> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isEditing ? 'RELOAD THE VIBE, BRO' : 'SNAP THE VIBE, BRO',
-                style: GoogleFonts.outfit(
+                isEditing ? 'RELOAD THE VIBE' : 'SNAP THE VIBE',
+                style: GoogleFonts.inter(
                   fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF2DD4BF),
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black,
                   letterSpacing: 1.5,
                 ),
               ),
               if (_isLoading)
-                const SizedBox(
+                SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2DD4BF)),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _tealColor),
                 )
               else
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close, color: Colors.white38, size: 20),
+                  icon: const Icon(Icons.close_rounded, color: Colors.black12, size: 24),
                 ),
             ],
           ),
           const SizedBox(height: 16),
           
-          // --- Image Preview Area ---
           if (_imageFile != null || _existingImageUrl != null)
             Stack(
               children: [
@@ -198,7 +189,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
                     onTap: () => setState(() { _imageFile = null; _existingImageUrl = null; }),
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                      decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
                       child: const Icon(Icons.close, color: Colors.white, size: 16),
                     ),
                   ),
@@ -210,13 +201,13 @@ class _CreatePostModalState extends State<CreatePostModal> {
             controller: _contentController,
             maxLines: 3,
             autofocus: !isEditing,
-            style: GoogleFonts.outfit(color: Colors.white, fontSize: 18),
+            style: GoogleFonts.inter(color: Colors.black, fontSize: 16),
             decoration: InputDecoration(
-              hintText: "What's hitting? Location, hustle, energy...",
-              hintStyle: const TextStyle(color: Colors.white24),
+              hintText: "What's hitting, Bro?",
+              hintStyle: GoogleFonts.inter(color: Colors.black26),
               border: InputBorder.none,
               filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
+              fillColor: Colors.black.withOpacity(0.04),
               contentPadding: const EdgeInsets.all(20),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -224,21 +215,21 @@ class _CreatePostModalState extends State<CreatePostModal> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: Color(0xFF2DD4BF), width: 1),
+                borderSide: BorderSide(color: _tealColor.withOpacity(0.1), width: 1),
               ),
               suffixIcon: IconButton(
                 onPressed: _pickImage,
-                icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFF2DD4BF)),
+                icon: const Icon(Icons.camera_alt_outlined, color: Colors.black26),
               ),
             ),
           ),
           const SizedBox(height: 24),
           Text(
             'CHOOSE THE VIBE',
-            style: GoogleFonts.outfit(
+            style: GoogleFonts.inter(
               fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.white38,
+              fontWeight: FontWeight.w900,
+              color: Colors.black26,
               letterSpacing: 1.5,
             ),
           ),
@@ -259,15 +250,16 @@ class _CreatePostModalState extends State<CreatePostModal> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF2DD4BF) : Colors.white.withOpacity(0.05),
+                      color: isSelected ? _tealColor : Colors.black.withOpacity(0.04),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      vibe,
-                      style: GoogleFonts.outfit(
-                        color: isSelected ? Colors.black : Colors.white60,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 13,
+                      vibe.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color: isSelected ? Colors.white : Colors.black38,
+                        fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                        fontSize: 10,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
@@ -278,17 +270,18 @@ class _CreatePostModalState extends State<CreatePostModal> {
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
-            height: 54,
+            height: 56,
             child: ElevatedButton(
               onPressed: _isLoading ? null : _submitPost,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2DD4BF),
-                foregroundColor: Colors.black,
+                backgroundColor: _tealColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               child: Text(
-                isEditing ? 'UPDATE THE VIBE' : 'POST TO THE FEED',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                isEditing ? 'RELOAD THE VIBE' : 'POST TO THE FEED',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w900, letterSpacing: 1.5, fontSize: 13),
               ),
             ),
           ),
