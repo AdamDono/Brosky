@@ -1,3 +1,5 @@
+import 'package:bro_app/src/features/auth/presentation/terms_screen.dart';
+import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,14 +20,67 @@ class _AuthScreenState extends State<AuthScreen> {
   final _passwordController = TextEditingController();
   final _usernameController = TextEditingController(); // Only for Sign Up
   bool _isLoading = false;
+  bool _rememberMe = false;
+  bool _agreeTerms = false;
+  bool _obscurePassword = true;
+
+  final Color _primaryColor = const Color(0xFF14B8A6); // Clean Premium Teal
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        backgroundColor: Colors.redAccent.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(20),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+        ),
+        backgroundColor: _primaryColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(20),
+      ),
+    );
+  }
 
   Future<void> _submitAuth() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final username = _usernameController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) return;
-    if (_isSignUp && username.isEmpty) return;
+    // --- VALIDATION ---
+    if (email.isEmpty) {
+      _showError('Please enter your email address, Bro.');
+      return;
+    }
+    if (password.isEmpty) {
+      _showError('Password is required to proceed.');
+      return;
+    }
+    if (_isSignUp) {
+      if (username.isEmpty) {
+        _showError('Please pick a username for the Brotherhood.');
+        return;
+      }
+      if (!_agreeTerms) {
+        _showError('You must agree to the Brotherhood Pact to join.');
+        return;
+      }
+    }
 
     setState(() => _isLoading = true);
 
@@ -35,16 +90,10 @@ class _AuthScreenState extends State<AuthScreen> {
         await Supabase.instance.client.auth.signUp(
           email: email,
           password: password,
-          data: {'username': username}, // Save username in metadata
+          data: {'username': username},
         );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Account Created! Please check your email to confirm.'),
-              backgroundColor: Color(0xFF2DD4BF),
-            ),
-          );
-          // Auto-login logic usually follows, or ask them to check email
+          _showSuccess('Account Created! Please check your email to verify.');
         }
       } else {
         // --- SIGN IN ---
@@ -52,70 +101,37 @@ class _AuthScreenState extends State<AuthScreen> {
           email: email,
           password: password,
         );
-        // Auth state listener will handle navigation to Onboarding
       }
     } on AuthException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error.message),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        _showError(error.message);
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unexpected error occurred'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        _showError('An unexpected error occurred. Please try again.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _navigateToOnboarding(BuildContext context) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
-    // Listen for successful login
     Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
       if (data.event == AuthChangeEvent.signedIn && mounted) {
         final user = data.session?.user;
         if (user == null) return;
-
         try {
-          // Check if they already have vibes set in their profile
-          final profile = await Supabase.instance.client
-              .from('profiles')
-              .select('vibes')
-              .eq('id', user.id)
-              .maybeSingle();
-
+          final profile = await Supabase.instance.client.from('profiles').select('vibes').eq('id', user.id).maybeSingle();
           final vibes = (profile?['vibes'] as List?) ?? [];
-          
           if (mounted) {
-            if (vibes.isNotEmpty) {
-              // Veteran Bro -> Home
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            } else {
-              // New Bro -> Onboarding
-              _navigateToOnboarding(context);
-            }
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => vibes.isNotEmpty ? const HomeScreen() : const OnboardingScreen()),
+            );
           }
         } catch (e) {
-          // Fallback to onboarding if profile check fails
-          if (mounted) _navigateToOnboarding(context);
+          if (mounted) Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
         }
       }
     });
@@ -131,131 +147,189 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
+    return Theme(
+      data: ThemeData(
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: Colors.white,
+        primaryColor: _primaryColor,
+        textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
+      ),
+      child: Scaffold(
+        body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Logo
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF2DD4BF), width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2DD4BF).withOpacity(0.3),
-                        blurRadius: 20,
-                        spreadRadius: 5,
+                if (!_isSignUp) ...[
+                  // --- High-End Line Art Illustration ---
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/images/auth_hero.png',
+                        height: 380,
+                        fit: BoxFit.contain,
+                        errorBuilder: (c, e, s) => Container(
+                          height: 300,
+                          alignment: Alignment.center,
+                          child: Icon(Icons.person_outline_rounded, size: 80, color: _primaryColor.withOpacity(0.1)),
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.handshake_outlined,
-                    size: 40,
-                    color: Color(0xFF2DD4BF),
+                ] else ...[
+                  // --- Sign Up Header ---
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(28, 60, 28, 40),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft,
+                        colors: [
+                          _primaryColor.withOpacity(0.08),
+                          _primaryColor.withOpacity(0.01),
+                          Colors.white,
+                        ],
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        IconButton(
+                          onPressed: () => setState(() => _isSignUp = false),
+                          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                          padding: EdgeInsets.zero,
+                          alignment: Alignment.centerLeft,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Let\'s Get Started',
+                          style: GoogleFonts.inter(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black,
+                            letterSpacing: -1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Join the Brotherhood today',
+                          style: GoogleFonts.inter(fontSize: 16, color: Colors.black38),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  _isSignUp ? 'Join the Brotherhood.' : 'Welcome Back.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _isSignUp 
-                    ? 'Start connecting with real guys today.' 
-                    : 'Good to see you again, Bro.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    color: Colors.white60,
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                // Form Fields
-                if (_isSignUp) ...[
-                  TextField(
-                    controller: _usernameController,
-                    style: GoogleFonts.outfit(color: Colors.white),
-                    decoration: _inputDecoration('Username'),
-                  ),
-                  const SizedBox(height: 16),
                 ],
 
-                TextField(
-                  controller: _emailController,
-                  style: GoogleFonts.outfit(color: Colors.white),
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _inputDecoration('Email Address'),
-                ),
-                const SizedBox(height: 16),
-                
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  style: GoogleFonts.outfit(color: Colors.white),
-                  decoration: _inputDecoration('Password'),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Primary Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _submitAuth,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2DD4BF),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
-                    ),
-                    child: _isLoading 
-                      ? const SizedBox(
-                          height: 24, 
-                          width: 24, 
-                          child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)
-                        )
-                      : Text(
-                          _isSignUp ? 'Create Account' : 'Sign In',
-                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!_isSignUp) ...[
+                         const SizedBox(height: 10),
+                      ],
+                      
+                      if (_isSignUp) ...[
+                        _buildLabel('Username'),
+                        TextField(
+                          controller: _usernameController,
+                          decoration: _inputDecoration('e.g. bro_master'),
                         ),
-                  ),
-                ),
+                        const SizedBox(height: 24),
+                      ],
 
-                const SizedBox(height: 24),
-
-                // Toggle Sign Up / Sign In
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _isSignUp ? 'Already have an account?' : 'New to BRO?',
-                      style: GoogleFonts.outfit(color: Colors.white60),
-                    ),
-                    TextButton(
-                      onPressed: () => setState(() => _isSignUp = !_isSignUp),
-                      child: Text(
-                        _isSignUp ? 'Sign In' : 'Create Account',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFF2DD4BF),
-                          fontWeight: FontWeight.bold,
+                      _buildLabel('Email Address'),
+                      TextField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _inputDecoration('your@email.com'),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      _buildLabel('Password'),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        decoration: _inputDecoration(
+                          '••••••••', 
+                          isPassword: true,
+                          onToggleVisibility: () => setState(() => _obscurePassword = !_obscurePassword),
+                          isPasswordVisible: !_obscurePassword,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _isSignUp ? _agreeTerms : _rememberMe,
+                              onChanged: (val) => setState(() {
+                                if (_isSignUp) _agreeTerms = val!;
+                                else _rememberMe = val!;
+                              }),
+                              activeColor: _primaryColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _isSignUp 
+                              ? GestureDetector(
+                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsScreen())),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(text: 'I agree with ', style: GoogleFonts.inter(fontSize: 14, color: Colors.black87)),
+                                        TextSpan(text: 'terms of use', style: GoogleFonts.inter(fontSize: 14, color: _primaryColor, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              : Text('Remember me next time', style: GoogleFonts.inter(fontSize: 14, color: Colors.black87)),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 58,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitAuth,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _primaryColor,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          child: _isLoading 
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : Text(_isSignUp ? 'Sign up' : 'Sign in', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+                      Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(_isSignUp ? 'Already have an account? ' : 'New to BRO? ', style: GoogleFonts.inter(color: Colors.black38)),
+                            GestureDetector(
+                              onTap: () => setState(() => _isSignUp = !_isSignUp),
+                              child: Text(_isSignUp ? 'Sign in' : 'Create account', style: GoogleFonts.inter(color: _primaryColor, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 60),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -265,21 +339,35 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String label) {
+  Widget _buildLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint, {bool isPassword = false, VoidCallback? onToggleVisibility, bool isPasswordVisible = false}) {
     return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white60),
+      hintText: hint,
+      hintStyle: GoogleFonts.inter(color: Colors.black12),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Colors.grey.withOpacity(0.04),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide.none,
-        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
+        borderRadius: BorderRadius.circular(12),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Color(0xFF2DD4BF)),
-        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: _primaryColor, width: 2),
+        borderRadius: BorderRadius.circular(12),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      prefixIcon: Icon(isPassword ? Icons.lock_open_rounded : Icons.alternate_email_rounded, size: 20, color: Colors.black26),
+      suffixIcon: isPassword 
+        ? IconButton(
+            icon: Icon(isPasswordVisible ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 20, color: Colors.black26),
+            onPressed: onToggleVisibility,
+          )
+        : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 }

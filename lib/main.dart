@@ -27,18 +27,34 @@ class BroApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const Color primaryIndigo = Color(0xFF6366F1);
+
     return MaterialApp(
-      title: 'BRO',
+      title: 'BROSKY',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0F172A), // Deep Navy
-        primaryColor: const Color(0xFF2DD4BF), // Electric Teal
-        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+        scaffoldBackgroundColor: const Color(0xFF000000), // Pure Obsidian
+        primaryColor: primaryIndigo,
+        canvasColor: const Color(0xFF111111),
+        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
+          displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white),
+          titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Colors.white),
+          bodyMedium: GoogleFonts.inter(color: Colors.white70),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1),
+        ),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF2DD4BF),
-          secondary: Color(0xFF0D9488),
-          surface: Color(0xFF1E293B),
+          primary: primaryIndigo,
+          onPrimary: Colors.white,
+          secondary: Color(0xFF4F46E5),
+          surface: Color(0xFF0A0A0A),
+          onSurface: Colors.white,
+          background: Colors.black,
         ),
         useMaterial3: true,
       ),
@@ -113,32 +129,33 @@ class _SplashScreenState extends State<SplashScreen> {
           children: [
             // Logo Placeholder
             Container(
-              width: 120,
-              height: 120,
+              width: 140,
+              height: 140,
               decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF2DD4BF), width: 2),
+                border: Border.all(color: Colors.white, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2DD4BF).withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 5,
+                    color: Colors.white.withOpacity(0.1),
+                    blurRadius: 40,
+                    spreadRadius: 10,
                   ),
                 ],
               ),
               child: const Icon(
-                Icons.handshake_outlined,
-                size: 60,
-                color: Color(0xFF2DD4BF),
+                Icons.handshake_rounded,
+                size: 70,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             Text(
-              'BRO',
+              'BROSKY',
               style: GoogleFonts.outfit(
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 4,
+                fontSize: 52,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 8,
                 color: Colors.white,
               ),
             ),
