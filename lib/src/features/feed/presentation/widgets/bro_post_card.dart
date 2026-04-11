@@ -1,5 +1,6 @@
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
+import 'package:bro_app/src/features/feed/presentation/post_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -83,6 +84,10 @@ class _BroPostCardState extends State<BroPostCard> {
     }
   }
 
+  void _navigateToDetail() {
+     Navigator.push(context, MaterialPageRoute(builder: (ctx) => PostDetailScreen(post: widget.post)));
+  }
+
   void _handleEdit() {
     showModalBottomSheet(
       context: context, 
@@ -158,7 +163,10 @@ class _BroPostCardState extends State<BroPostCard> {
                         // Header: Name + Handle/Time + More
                         Row(
                           children: [
-                            Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B))),
+                            GestureDetector(
+                               onTap: _navigateToDetail,
+                               child: Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B)))
+                            ),
                             const SizedBox(width: 6),
                             Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
                             const Spacer(),
@@ -203,37 +211,43 @@ class _BroPostCardState extends State<BroPostCard> {
                         ),
                         const SizedBox(height: 4),
                         
-                        // Content Text
-                        Text(
-                          widget.post['content'] ?? '', 
-                          style: GoogleFonts.inter(fontSize: 15, height: 1.5, color: const Color(0xFF1E293B), fontWeight: FontWeight.w400)
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Image Media
-                        if (widget.post['image_url'] != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              widget.post['image_url'],
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(height: 200, color: const Color(0xFFF8FAFC), child: const Center(child: CircularProgressIndicator(strokeWidth: 2)));
-                              },
-                            ),
+                        // Content Text + Image (Wrapped in Nav Bridge)
+                        GestureDetector(
+                          onTap: _navigateToDetail,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.post['content'] ?? '', 
+                                style: GoogleFonts.inter(fontSize: 15, height: 1.5, color: const Color(0xFF1E293B), fontWeight: FontWeight.w400)
+                              ),
+                              const SizedBox(height: 12),
+                              if (widget.post['image_url'] != null)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    widget.post['image_url'],
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(height: 200, color: const Color(0xFFF8FAFC), child: const Center(child: CircularProgressIndicator(strokeWidth: 2)));
+                                    },
+                                  ),
+                                ),
+                            ],
                           ),
+                        ),
                         
                         const SizedBox(height: 16),
                         
-                        // Action Row (Flat Aesthetic)
+                        // Action Row
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Comment
+                            // Comment (Wired to Nav)
                             GestureDetector(
-                              onTap: () {},
+                              onTap: _navigateToDetail,
                               child: Row(
                                 children: [
                                   const HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: Color(0xFF64748B), size: 18),
@@ -258,6 +272,7 @@ class _BroPostCardState extends State<BroPostCard> {
                               ),
                             ),
                             const SizedBox(width: 20),
+                            const SizedBox(width: 20),
                           ],
                         ),
                       ],
@@ -266,7 +281,7 @@ class _BroPostCardState extends State<BroPostCard> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)), // Razor Divider
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)), 
           ],
         );
       }

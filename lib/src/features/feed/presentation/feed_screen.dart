@@ -15,11 +15,13 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   final TextEditingController _searchController = TextEditingController();
   late Timer _refreshTimer;
+  String _selectedVibe = 'ALL';
+
+  final List<String> _vibes = ['ALL', 'STRATEGY', 'GAINS', 'HUSTLE', 'LIFESTYLE', 'VIBES'];
 
   @override
   void initState() {
     super.initState();
-    // Refresh the UI every minute to ensure posts over 24h evaporate live
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
@@ -34,43 +36,90 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Current 24-hour cut-off
     final cutOff = DateTime.now().subtract(const Duration(hours: 24));
 
     return Column(
       children: [
-        // --- FLAT INTEGRATED SEARCH ---
+        // --- TACTICAL COMMAND CENTER ---
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
             border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
           ),
-          child: Container(
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: TextField(
-              controller: _searchController,
-              textAlignVertical: TextAlignVertical.center,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF1A1D21), fontSize: 15),
-              decoration: InputDecoration(
-                hintText: 'Search the Brohood',
-                hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 15, fontWeight: FontWeight.w400),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 14),
-                  child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, color: Color(0xFF64748B), size: 18),
+          child: Column(
+            children: [
+              // Search Bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    textAlignVertical: TextAlignVertical.center,
+                    onChanged: (val) => setState(() {}),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF1A1D21), fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: 'Search the Brohood',
+                      hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 15, fontWeight: FontWeight.w400),
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 14),
+                        child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, color: Color(0xFF64748B), size: 18),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
                 ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
               ),
-            ),
+              
+              // Tactical Vibe Selector
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  itemCount: _vibes.length,
+                  itemBuilder: (context, index) {
+                    final vibe = _vibes[index];
+                    final isSelected = _selectedVibe == vibe;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedVibe = vibe),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF14B8A6) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected ? const Color(0xFF14B8A6) : const Color(0xFFF1F5F9),
+                            width: 1.5
+                          ),
+                        ),
+                        child: Text(
+                          vibe == 'ALL' ? 'ALL' : '#$vibe',
+                          style: GoogleFonts.inter(
+                            color: isSelected ? Colors.white : const Color(0xFF64748B),
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
           ),
         ),
 
-        // --- EPHEMERAL STREAM (24H WINDOW) ---
+        // --- EPHEMERAL STREAM ---
         Expanded(
           child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: Supabase.instance.client
@@ -86,15 +135,33 @@ class _FeedScreenState extends State<FeedScreen> {
                 return Center(child: Text('The barbershop is empty, Bro.', style: GoogleFonts.inter(color: Colors.black26)));
               }
 
-              // --- SURGICAL 24H FILTERING ---
+              // --- SURGICAL FILTERING (24H + SEARCH + VIBE) ---
               final allPosts = snapshot.data!;
               final validPosts = allPosts.where((post) {
                 final createdAt = DateTime.parse(post['created_at']);
-                return createdAt.isAfter(cutOff);
+                final content = (post['content'] ?? '').toString().toUpperCase();
+                final searchQuery = _searchController.text.toUpperCase();
+                
+                final isWithin24h = createdAt.isAfter(cutOff);
+                final matchesSearch = searchQuery.isEmpty || content.contains(searchQuery);
+                final matchesVibe = _selectedVibe == 'ALL' || content.contains(_selectedVibe);
+
+                return isWithin24h && matchesSearch && matchesVibe;
               }).toList();
 
               if (validPosts.isEmpty) {
-                return Center(child: Text('Conversations have vanished. Start a new one.', style: GoogleFonts.inter(color: Colors.black26)));
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(40.0),
+                    child: Text(
+                      _selectedVibe == 'ALL' 
+                        ? 'The stream has evaporated. Start a new one.' 
+                        : 'No posts found in #$_selectedVibe', 
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(color: Colors.black26, fontWeight: FontWeight.w600)
+                    ),
+                  )
+                );
               }
 
               return ListView.builder(
