@@ -1,11 +1,10 @@
-import 'dart:async';
-import 'package:bro_app/src/core/services/location_service.dart';
 import 'package:bro_app/src/features/chat/presentation/bro_direct_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/feed_screen.dart';
 import 'package:bro_app/src/features/huddles/presentation/huddles_screen.dart';
 import 'package:bro_app/src/features/match/presentation/match_screen.dart';
 import 'package:bro_app/src/features/profile/presentation/profile_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
+import 'package:bro_app/src/features/huddles/presentation/create_huddle_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,30 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color _primaryColor = const Color(0xFF14B8A6); // Urban Teal
-  Timer? _heartbeatTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _startHeartbeat();
-  }
-
-  @override
-  void dispose() {
-    _heartbeatTimer?.cancel();
-    super.dispose();
-  }
-
-  /// Tactical Heartbeat: Hyper-reactive 1-minute server pings.
-  void _startHeartbeat() {
-    // Immediate first ping
-    LocationService.updateLocation();
-    
-    _heartbeatTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
-       debugPrint('Heartbeat Pulse Sent... 🫀');
-       await LocationService.updateLocation();
-    });
-  }
 
   void _signOut() async {
     final confirm = await showDialog<bool>(
@@ -139,14 +114,24 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentIndex,
         children: screens,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (ctx) => const CreatePostModal()),
-        backgroundColor: _primaryColor,
-        elevation: 4,
-        key: const ValueKey('floating_post_button'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const HugeIcon(icon: HugeIcons.strokeRoundedPlusSign, color: Colors.white, size: 24),
-      ),
+      floatingActionButton: _currentIndex == 1 // No add on Radar
+          ? null 
+          : FloatingActionButton(
+              onPressed: () {
+                if (_currentIndex == 2) {
+                  // BROHOOD: Start Huddle
+                  showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (ctx) => const CreateHuddleModal());
+                } else {
+                  // DEFAULT/FEED: Create Post
+                  showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (ctx) => const CreatePostModal());
+                }
+              },
+              backgroundColor: _primaryColor,
+              elevation: 4,
+              key: const ValueKey('floating_action_button'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: const HugeIcon(icon: HugeIcons.strokeRoundedPlusSign, color: Colors.white, size: 24),
+            ),
       bottomNavigationBar: Container(
         height: 85,
         decoration: BoxDecoration(
