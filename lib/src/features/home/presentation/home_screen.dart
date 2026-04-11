@@ -1,6 +1,7 @@
 import 'package:bro_app/src/features/chat/presentation/bro_direct_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/feed_screen.dart';
 import 'package:bro_app/src/features/huddles/presentation/huddles_screen.dart';
+import 'package:bro_app/src/features/huddles/presentation/squad_requests_screen.dart';
 import 'package:bro_app/src/features/match/presentation/match_screen.dart';
 import 'package:bro_app/src/features/profile/presentation/profile_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
@@ -20,7 +21,64 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final Color _primaryColor = const Color(0xFF14B8A6); // Urban Teal
+  final Color _primaryColor = const Color(0xFF14B8A6);
+  int _pendingRequestCount = 0;
+  Map<String, dynamic>? _myProfile;
+  int _broCount = 0;
+  int _huddleCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPendingRequests();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final profile = await Supabase.instance.client
+          .from('profiles').select().eq('id', user.id).single();
+      final cons = await Supabase.instance.client
+          .from('conversations')
+          .select('id')
+          .or('user1_id.eq.${user.id},user2_id.eq.${user.id}')
+          .eq('status', 'accepted');
+      final huddles = await Supabase.instance.client
+          .from('huddle_members').select('id').eq('user_id', user.id);
+      if (mounted) setState(() {
+        _myProfile = Map<String, dynamic>.from(profile);
+        _broCount = (cons as List).length;
+        _huddleCount = (huddles as List).length;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadPendingRequests() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      // Fetch squads this user created
+      final mySquadsRes = await Supabase.instance.client
+          .from('huddles')
+          .select('id')
+          .eq('creator_id', user.id);
+      final mySquadIds = (mySquadsRes as List).map((s) => s['id'].toString()).toList();
+      if (mySquadIds.isEmpty) return;
+
+      // Count pending requests for those squads
+      final requestsRes = await Supabase.instance.client
+          .from('huddle_join_requests')
+          .select('id')
+          .inFilter('huddle_id', mySquadIds)
+          .eq('status', 'pending');
+
+      if (mounted) setState(() => _pendingRequestCount = (requestsRes as List).length);
+    } catch (_) {
+      // Table may not exist yet — silently skip
+    }
+  }
 
   void _signOut() async {
     final confirm = await showDialog<bool>(
@@ -66,9 +124,22 @@ class _HomeScreenState extends State<HomeScreen> {
             elevation: 0,
             centerTitle: true,
             leadingWidth: 60,
-            leading: IconButton(
-              icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01, color: Color(0xFF1A1D21), size: 22),
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            leading: Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01, color: Color(0xFF1A1D21), size: 22),
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                ),
+                if (_pendingRequestCount > 0)
+                  Positioned(
+                    top: 10, right: 10,
+                    child: Container(
+                      width: 8, height: 8,
+                      decoration: const BoxDecoration(color: Color(0xFFEF4444), shape: BoxShape.circle),
+                    ),
+                  ),
+              ],
             ),
             title: Text(
               'BROSKY',
@@ -174,33 +245,141 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer() {
+    final username = _myProfile?['username'] ?? 'BRO';
+    final bio = _myProfile?['bio'] ?? 'Ready to build.';
+    final avatarUrl = _myProfile?['avatar_url'];
+    final navItems = [
+      {'icon': HugeIcons.strokeRoundedHome01,     'label': 'Feed',      'index': 0},
+      {'icon': HugeIcons.strokeRoundedRadar01,    'label': 'Radar',     'index': 1},
+      {'icon': HugeIcons.strokeRoundedUserGroup,  'label': 'Brohood',   'index': 2},
+      {'icon': HugeIcons.strokeRoundedBubbleChat, 'label': 'Messages',  'index': 3},
+    ];
+
     return Drawer(
       backgroundColor: Colors.white,
+      width: MediaQuery.of(context).size.width * 0.82,
       child: SafeArea(
         child: Column(
           children: [
+            // ── PROFILE HEADER ──────────────────────────────────
             Container(
-              padding: const EdgeInsets.all(32),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('BROSKY', style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black, letterSpacing: 3)),
-                  const Spacer(),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.black12, size: 24)),
+                  Row(
+                    children: [
+                      // Avatar
+                      Container(
+                        width: 60, height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFF1F5F9),
+                          border: Border.all(color: _primaryColor.withOpacity(0.3), width: 2),
+                          image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+                        ),
+                        child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.black26, size: 28) : null,
+                      ),
+                      const Spacer(),
+                      // Close
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(color: const Color(0xFFF8FAFC), shape: BoxShape.circle, border: Border.all(color: const Color(0xFFF1F5F9), width: 1)),
+                          child: const Center(child: HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.black26, size: 16)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(username.toUpperCase(), style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), letterSpacing: 1)),
+                  const SizedBox(height: 4),
+                  Text(bio, style: GoogleFonts.inter(fontSize: 12, color: Colors.black38, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 20),
+                  // Stats row
+                  Row(
+                    children: [
+                      _buildStatChip('$_broCount', 'BROS'),
+                      const SizedBox(width: 12),
+                      _buildStatChip('$_huddleCount', 'SQUADS'),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const Divider(height: 1),
+
+            // ── NAVIGATION ──────────────────────────────────────
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
                 children: [
-                   _buildDrawerItem(icon: HugeIcons.strokeRoundedHome01, title: 'Feed', isSelected: _currentIndex == 0, onTap: () { setState(() => _currentIndex = 0); Navigator.pop(context); }),
-                  _buildDrawerItem(icon: HugeIcons.strokeRoundedRadar01, title: 'Radar', isSelected: _currentIndex == 1, onTap: () { setState(() => _currentIndex = 1); Navigator.pop(context); }),
-                  _buildDrawerItem(icon: HugeIcons.strokeRoundedUserGroup, title: 'Community', isSelected: _currentIndex == 2, onTap: () { setState(() => _currentIndex = 2); Navigator.pop(context); }),
-                  _buildDrawerItem(icon: HugeIcons.strokeRoundedBubbleChat, title: 'Messages', isSelected: _currentIndex == 3, onTap: () { setState(() => _currentIndex = 3); Navigator.pop(context); }),
-                  const Padding(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 24), child: Divider(height: 1)),
-                  _buildDrawerItem(icon: HugeIcons.strokeRoundedLogout01, title: 'Sign Out', onTap: _signOut, textColor: Colors.redAccent),
+                  // Section label
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, bottom: 10),
+                    child: Text('NAVIGATE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 2)),
+                  ),
+                  ...navItems.map((item) {
+                    final idx = item['index'] as int;
+                    final isSelected = _currentIndex == idx;
+                    return _buildPremiumNavItem(
+                      icon: item['icon'] as dynamic,
+                      label: item['label'] as String,
+                      isSelected: isSelected,
+                      onTap: () { setState(() => _currentIndex = idx); Navigator.pop(context); },
+                    );
+                  }),
+
+                  const SizedBox(height: 24),
+
+                  // Squad Requests Notification
+                  if (_pendingRequestCount > 0) ..._buildRequestsDrawerItem(),
+
+                  const SizedBox(height: 24),
+
+                  // Profile shortcut
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, bottom: 10),
+                    child: Text('ACCOUNT', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 2)),
+                  ),
+                  _buildPremiumNavItem(
+                    icon: HugeIcons.strokeRoundedUser,
+                    label: 'My Profile',
+                    isSelected: false,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                    },
+                  ),
                 ],
+              ),
+            ),
+
+            // ── FOOTER ──────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.black.withOpacity(0.04), width: 1))),
+              child: GestureDetector(
+                onTap: _signOut,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF5F5),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.12), width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      const HugeIcon(icon: HugeIcons.strokeRoundedLogout01, color: Colors.redAccent, size: 20),
+                      const SizedBox(width: 14),
+                      Text('SIGN OUT', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.5)),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -209,22 +388,112 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDrawerItem({required List<List<dynamic>> icon, required String title, required VoidCallback onTap, bool isSelected = false, Color? textColor}) {
-    return ListTile(
-      leading: HugeIcon(icon: icon, color: isSelected ? _primaryColor : const Color(0xFF94A3B8), size: 24),
-      title: Text(
-        title.toUpperCase(), 
-        style: GoogleFonts.inter(
-          color: textColor ?? (isSelected ? _primaryColor : const Color(0xFF475569)),
-          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-          fontSize: 14,
-          letterSpacing: 1.5,
-        )
+  Widget _buildStatChip(String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
       ),
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      tileColor: isSelected ? _primaryColor.withOpacity(0.08) : null,
+      child: Column(
+        children: [
+          Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
+          Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5)),
+        ],
+      ),
     );
+  }
+
+  Widget _buildPremiumNavItem({required dynamic icon, required String label, required bool isSelected, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? _primaryColor.withOpacity(0.08) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? _primaryColor.withOpacity(0.2) : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(
+                color: isSelected ? _primaryColor : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(child: HugeIcon(icon: icon, color: isSelected ? Colors.white : const Color(0xFF94A3B8), size: 18)),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label.toUpperCase(),
+              style: GoogleFonts.inter(
+                color: isSelected ? _primaryColor : const Color(0xFF475569),
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                fontSize: 13,
+                letterSpacing: 1.5,
+              ),
+            ),
+            if (isSelected) ...[
+              const Spacer(),
+              Container(width: 6, height: 6, decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Returns a list so it can be spread into the drawer ListView with `...`
+  List<Widget> _buildRequestsDrawerItem() {
+    return [
+      const Padding(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8), child: Divider(height: 1)),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: GestureDetector(
+          onTap: () async {
+            Navigator.pop(context);
+            await Navigator.push(context, MaterialPageRoute(builder: (_) => const SquadRequestsScreen()));
+            // Refresh badge count after returning from requests screen
+            _loadPendingRequests();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            decoration: BoxDecoration(
+              color: _primaryColor.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _primaryColor.withOpacity(0.15), width: 1),
+            ),
+            child: Row(
+              children: [
+                HugeIcon(icon: HugeIcons.strokeRoundedNotification01, color: _primaryColor, size: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('SQUAD REQUESTS', style: GoogleFonts.inter(color: _primaryColor, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.5)),
+                      const SizedBox(height: 2),
+                      Text('$_pendingRequestCount pending enlistment${_pendingRequestCount == 1 ? '' : 's'}', style: GoogleFonts.inter(color: _primaryColor.withOpacity(0.7), fontWeight: FontWeight.w600, fontSize: 11)),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle),
+                  child: Center(child: Text('$_pendingRequestCount', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11))),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 }

@@ -20,6 +20,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
 
   List<String> _myConnections = [];
   List<String> _joinedHuddleIds = [];
+  List<String> _pendingRequestHuddleIds = []; // Squads where user sent a join request
 
   final List<String> _vibes = ['ALL', 'STRATEGY', 'GAINS', 'LIFESTYLE', 'HUSTLE', 'VIBES'];
 
@@ -43,6 +44,18 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
       // 2. Fetch My Memberships
       final myHuddlesRes = await Supabase.instance.client.from('huddle_members').select('huddle_id').eq('user_id', user.id);
       _joinedHuddleIds = (myHuddlesRes as List).map((h) => h['huddle_id'].toString()).toList();
+
+      // 3. Fetch My Pending Requests
+      try {
+        final myRequestsRes = await Supabase.instance.client
+            .from('huddle_join_requests')
+            .select('huddle_id')
+            .eq('user_id', user.id)
+            .eq('status', 'pending');
+        _pendingRequestHuddleIds = (myRequestsRes as List).map((r) => r['huddle_id'].toString()).toList();
+      } catch (_) {
+        _pendingRequestHuddleIds = []; // Table may not exist yet
+      }
 
       // 3. Fetch All Huddles
       var query = Supabase.instance.client.from('huddles').select('*, huddle_members(count)');
@@ -112,6 +125,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
     final isPublic = huddle['is_public'] ?? true;
     final huddleId = huddle['id'].toString();
     final isJoined = _joinedHuddleIds.contains(huddleId);
+    final hasPendingRequest = _pendingRequestHuddleIds.contains(huddleId);
     
     int memberCount = 0;
     if (huddle['huddle_members'] != null && (huddle['huddle_members'] as List).isNotEmpty) { memberCount = huddle['huddle_members'][0]['count'] ?? 0; }
@@ -164,33 +178,63 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                                 onTap: () {
                                   if (isPublic || isJoined) {
                                     Navigator.push(context, MaterialPageRoute(builder: (ctx) => HuddleChatScreen(huddleId: huddle['id'], huddleName: huddle['name'])));
-                                  } else {
-                                    // RESTRICTED & NOT JOINED
+                                  } else if (!hasPendingRequest) {
                                     _requestAccess(huddleId, name);
                                   }
+                                  // If hasPendingRequest: do nothing, button is disabled
                                 }, 
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), 
                                   decoration: BoxDecoration(
-                                    color: (isPublic || isJoined) ? Colors.white : _teal, 
+                                    color: (isPublic || isJoined)
+                                        ? Colors.white
+                                        : hasPendingRequest
+                                            ? const Color(0xFFF1F5F9) // grayed
+                                            : _teal,
                                     borderRadius: BorderRadius.circular(16), 
-                                    border: Border.all(color: (isPublic || isJoined) ? const Color(0xFFF1F5F9) : _teal, width: 1.5)
+                                    border: Border.all(
+                                      color: (isPublic || isJoined)
+                                          ? const Color(0xFFF1F5F9)
+                                          : hasPendingRequest
+                                              ? const Color(0xFFE2E8F0)
+                                              : _teal,
+                                      width: 1.5,
+                                    ),
                                   ), 
                                   child: Row(
                                     children: [
                                       Text(
-                                        (isPublic || isJoined) ? 'ENTER' : 'REQUEST', 
-                                        style: GoogleFonts.inter(color: (isPublic || isJoined) ? const Color(0xFF1E293B) : Colors.white, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)
+                                        (isPublic || isJoined)
+                                            ? 'ENTER'
+                                            : hasPendingRequest
+                                                ? 'REQUESTED'
+                                                : 'REQUEST', 
+                                        style: GoogleFonts.inter(
+                                          color: (isPublic || isJoined)
+                                              ? const Color(0xFF1E293B)
+                                              : hasPendingRequest
+                                                  ? Colors.black26
+                                                  : Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11,
+                                          letterSpacing: 1.5,
+                                        ),
                                       ), 
-                                      const SizedBox(width: 8), 
-                                      HugeIcon(
-                                        icon: (isPublic || isJoined) ? HugeIcons.strokeRoundedArrowRight01 : HugeIcons.strokeRoundedLockPassword, 
-                                        color: (isPublic || isJoined) ? const Color(0xFF1E293B) : Colors.white, 
-                                        size: 14
-                                      )
-                                    ]
-                                  )
-                                )
+                                      if (!hasPendingRequest) ...[
+                                        const SizedBox(width: 8), 
+                                        HugeIcon(
+                                          icon: (isPublic || isJoined)
+                                              ? HugeIcons.strokeRoundedArrowRight01
+                                              : HugeIcons.strokeRoundedLockPassword, 
+                                          color: (isPublic || isJoined)
+                                              ? const Color(0xFF1E293B)
+                                              : Colors.white, 
+                                          size: 14,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
                             ),
                           ],
                         ),
@@ -208,10 +252,21 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
   }
 
   Future<void> _requestAccess(String huddleId, String name) async {
-    // Show a SnackBar for now, would typically create a request in DB
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Access requested for $name squad. 🛰️')),
-    );
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      await Supabase.instance.client.from('huddle_join_requests').insert({
+        'huddle_id': huddleId,
+        'user_id': user.id,
+        'status': 'pending',
+      });
+      // Immediately reflect pending state in UI
+      setState(() => _pendingRequestHuddleIds.add(huddleId));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Access requested for $name squad. 🛰️ The creator will be notified.')));
+    } catch (e) {
+      debugPrint('❌ Request failed: $e');
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Request failed: $e')));
+    }
   }
 
   Future<int> _getMutualCount(String huddleId) async {
