@@ -1,3 +1,4 @@
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -104,7 +105,10 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
       }
     } catch (e) {
       debugPrint('❌ Accept failed: $e');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+      final errorMsg = e.toString().contains('42501')
+          ? 'Permission denied. Run the RLS policy SQL in Supabase Dashboard.'
+          : 'Failed: $e';
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
     }
   }
 
@@ -194,17 +198,36 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
             ]),
           ),
           const SizedBox(height: 16),
-          // Requester
+          // Requester — tappable avatar to view profile
           Row(
             children: [
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFFF1F5F9),
-                  image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: request['user_id'].toString())),
                 ),
-                child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 24) : null,
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 52, height: 52,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFF1F5F9),
+                        border: Border.all(color: _teal.withOpacity(0.3), width: 2),
+                        image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+                      ),
+                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 24) : null,
+                    ),
+                    Positioned(
+                      bottom: 0, right: 0,
+                      child: Container(
+                        width: 18, height: 18,
+                        decoration: BoxDecoration(color: _teal, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                        child: const Center(child: HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: Colors.white, size: 9)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -212,6 +235,11 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
                   Text(username, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
                   const SizedBox(height: 2),
                   Text('Wants to join your squad', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: request['user_id'].toString()))),
+                    child: Text('View Profile →', style: GoogleFonts.inter(fontSize: 11, color: _teal, fontWeight: FontWeight.w700)),
+                  ),
                 ]),
               ),
             ],
