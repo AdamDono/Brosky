@@ -242,207 +242,170 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildDrawer() {
-    final username = _myProfile?['username'] ?? 'BRO';
-    final bio = _myProfile?['bio'] ?? 'Ready to build.';
+  }  Widget _buildDrawer() {
+    final username = _myProfile?['username'] ?? 'Bro';
+    final bio = _myProfile?['bio']?.toString().trim();
     final avatarUrl = _myProfile?['avatar_url'];
     final navItems = [
-      {'icon': HugeIcons.strokeRoundedHome01,     'label': 'Feed',      'index': 0},
-      {'icon': HugeIcons.strokeRoundedRadar01,    'label': 'Radar',     'index': 1},
-      {'icon': HugeIcons.strokeRoundedUserGroup,  'label': 'Brohood',   'index': 2},
-      {'icon': HugeIcons.strokeRoundedBubbleChat, 'label': 'Messages',  'index': 3},
+      {'icon': HugeIcons.strokeRoundedHome01,     'label': 'Feed',     'index': 0},
+      {'icon': HugeIcons.strokeRoundedRadar01,    'label': 'Radar',    'index': 1},
+      {'icon': HugeIcons.strokeRoundedUserGroup,  'label': 'Brohood',  'index': 2},
+      {'icon': HugeIcons.strokeRoundedBubbleChat, 'label': 'Messages', 'index': 3},
     ];
 
     return Drawer(
       backgroundColor: Colors.white,
-      width: MediaQuery.of(context).size.width * 0.82,
+      width: MediaQuery.of(context).size.width * 0.78,
+      elevation: 0,
       child: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── PROFILE HEADER ──────────────────────────────────
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+
+            // ── PROFILE ────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      // Avatar
-                      Container(
-                        width: 60, height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color(0xFFF1F5F9),
-                          border: Border.all(color: _primaryColor.withOpacity(0.3), width: 2),
-                          image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
-                        ),
-                        child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.black26, size: 28) : null,
+                  GestureDetector(
+                    onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())); },
+                    child: Container(
+                      width: 44, height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFF1F5F9),
+                        border: Border.all(color: _primaryColor.withOpacity(0.25), width: 1.5),
+                        image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
                       ),
-                      const Spacer(),
-                      // Close
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(color: const Color(0xFFF8FAFC), shape: BoxShape.circle, border: Border.all(color: const Color(0xFFF1F5F9), width: 1)),
-                          child: const Center(child: HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.black26, size: 16)),
-                        ),
-                      ),
-                    ],
+                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.black26, size: 20) : null,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(username.toUpperCase(), style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), letterSpacing: 1)),
-                  const SizedBox(height: 4),
-                  Text(bio, style: GoogleFonts.inter(fontSize: 12, color: Colors.black38, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 20),
-                  // Stats row
-                  Row(
-                    children: [
-                      _buildStatChip('$_broCount', 'BROS'),
-                      const SizedBox(width: 12),
-                      _buildStatChip('$_huddleCount', 'SQUADS'),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          username,
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                        ),
+                        if (bio != null && bio.isNotEmpty) ...[
+                          const SizedBox(height: 1),
+                          Text(bio, style: GoogleFonts.inter(fontSize: 11, color: Colors.black38, fontWeight: FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.black26, size: 18),
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // ── NAVIGATION ──────────────────────────────────────
+            // Inline stats
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+              child: Text(
+                '$_broCount Bros  ·  $_huddleCount Squads',
+                style: GoogleFonts.inter(fontSize: 11, color: Colors.black38, fontWeight: FontWeight.w500),
+              ),
+            ),
+
+            Container(height: 1, color: Colors.black.withOpacity(0.05)),
+
+            // ── NAVIGATION ─────────────────────────────────────────
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 children: [
-                  // Section label
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12, bottom: 10),
-                    child: Text('NAVIGATE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 2)),
-                  ),
                   ...navItems.map((item) {
                     final idx = item['index'] as int;
-                    final isSelected = _currentIndex == idx;
-                    return _buildPremiumNavItem(
+                    return _buildNavRow(
                       icon: item['icon'] as dynamic,
                       label: item['label'] as String,
-                      isSelected: isSelected,
+                      isSelected: _currentIndex == idx,
                       onTap: () { setState(() => _currentIndex = idx); Navigator.pop(context); },
                     );
                   }),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+                  Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Container(height: 1, color: Colors.black.withOpacity(0.05))),
+                  const SizedBox(height: 8),
 
-                  // Squad Requests Notification
-                  if (_pendingRequestCount > 0) ..._buildRequestsDrawerItem(),
-
-                  const SizedBox(height: 24),
-
-                  // Profile shortcut
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12, bottom: 10),
-                    child: Text('ACCOUNT', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 2)),
-                  ),
-                  _buildPremiumNavItem(
+                  _buildNavRow(
                     icon: HugeIcons.strokeRoundedUser,
                     label: 'My Profile',
                     isSelected: false,
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
-                    },
+                    onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())); },
                   ),
+
+                  if (_pendingRequestCount > 0) ..._buildRequestsNavRow(),
                 ],
               ),
             ),
 
-            // ── FOOTER ──────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.black.withOpacity(0.04), width: 1))),
+            // ── FOOTER ─────────────────────────────────────────────
+            Container(height: 1, color: Colors.black.withOpacity(0.05)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: GestureDetector(
                 onTap: _signOut,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF5F5),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.12), width: 1),
-                  ),
-                  child: Row(
-                    children: [
-                      const HugeIcon(icon: HugeIcons.strokeRoundedLogout01, color: Colors.redAccent, size: 20),
-                      const SizedBox(width: 14),
-                      Text('SIGN OUT', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.5)),
-                    ],
-                  ),
+                child: Row(
+                  children: [
+                    const HugeIcon(icon: HugeIcons.strokeRoundedLogout01, color: Colors.redAccent, size: 16),
+                    const SizedBox(width: 10),
+                    Text('Sign out', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 13)),
+                  ],
                 ),
               ),
             ),
+
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatChip(String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
-      ),
-      child: Column(
-        children: [
-          Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
-          Text(label, style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPremiumNavItem({required dynamic icon, required String label, required bool isSelected, required VoidCallback onTap}) {
+  Widget _buildNavRow({required dynamic icon, required String label, required bool isSelected, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         decoration: BoxDecoration(
-          color: isSelected ? _primaryColor.withOpacity(0.08) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? _primaryColor.withOpacity(0.2) : Colors.transparent,
-            width: 1,
-          ),
+          color: isSelected ? _primaryColor.withOpacity(0.06) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Container(
-              width: 38, height: 38,
-              decoration: BoxDecoration(
-                color: isSelected ? _primaryColor : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(child: HugeIcon(icon: icon, color: isSelected ? Colors.white : const Color(0xFF94A3B8), size: 18)),
+            HugeIcon(
+              icon: icon,
+              color: isSelected ? _primaryColor : const Color(0xFF94A3B8),
+              size: 17,
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Text(
-              label.toUpperCase(),
+              label,
               style: GoogleFonts.inter(
-                color: isSelected ? _primaryColor : const Color(0xFF475569),
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
                 fontSize: 13,
-                letterSpacing: 1.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? _primaryColor : const Color(0xFF334155),
               ),
             ),
             if (isSelected) ...[
               const Spacer(),
-              Container(width: 6, height: 6, decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle)),
+              Container(
+                width: 5, height: 5,
+                decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle),
+              ),
             ],
           ],
         ),
@@ -450,47 +413,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Returns a list so it can be spread into the drawer ListView with `...`
-  List<Widget> _buildRequestsDrawerItem() {
+  List<Widget> _buildRequestsNavRow() {
     return [
-      const Padding(padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8), child: Divider(height: 1)),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: GestureDetector(
-          onTap: () async {
-            Navigator.pop(context);
-            await Navigator.push(context, MaterialPageRoute(builder: (_) => const SquadRequestsScreen()));
-            // Refresh badge count after returning from requests screen
-            _loadPendingRequests();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            decoration: BoxDecoration(
-              color: _primaryColor.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _primaryColor.withOpacity(0.15), width: 1),
-            ),
-            child: Row(
-              children: [
-                HugeIcon(icon: HugeIcons.strokeRoundedNotification01, color: _primaryColor, size: 24),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('SQUAD REQUESTS', style: GoogleFonts.inter(color: _primaryColor, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.5)),
-                      const SizedBox(height: 2),
-                      Text('$_pendingRequestCount pending enlistment${_pendingRequestCount == 1 ? '' : 's'}', style: GoogleFonts.inter(color: _primaryColor.withOpacity(0.7), fontWeight: FontWeight.w600, fontSize: 11)),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 24, height: 24,
-                  decoration: BoxDecoration(color: _primaryColor, shape: BoxShape.circle),
-                  child: Center(child: Text('$_pendingRequestCount', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11))),
-                ),
-              ],
-            ),
+      const SizedBox(height: 4),
+      GestureDetector(
+        onTap: () async {
+          Navigator.pop(context);
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const SquadRequestsScreen()));
+          _loadPendingRequests();
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          decoration: BoxDecoration(
+            color: _primaryColor.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: _primaryColor.withOpacity(0.1), width: 1),
+          ),
+          child: Row(
+            children: [
+              HugeIcon(icon: HugeIcons.strokeRoundedNotification01, color: _primaryColor, size: 17),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Squad Requests', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _primaryColor)),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(color: _primaryColor, borderRadius: BorderRadius.circular(20)),
+                child: Text('$_pendingRequestCount', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10)),
+              ),
+            ],
           ),
         ),
       ),
