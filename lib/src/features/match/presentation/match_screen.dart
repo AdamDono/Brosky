@@ -45,9 +45,7 @@ class _MatchScreenState extends State<MatchScreen> {
     try {
       var query = Supabase.instance.client.from('profiles').select().neq('id', user.id);
       
-      // If filtering by vibe, we check if the vibes array contains the selected vibe
       if (_selectedVibe != 'ALL') {
-        // Assuming 'vibes' is a list of strings in the profile table
         query = query.contains('vibes', [_selectedVibe]);
       }
 
@@ -247,6 +245,14 @@ class _MatchScreenState extends State<MatchScreen> {
     final username = bro['username'] ?? 'Bro';
     final distance = (bro['real_distance'] as double).toStringAsFixed(1);
     final vibes = List<String>.from(bro['vibes'] ?? []);
+    
+    // Check if Active Now (updated_at within 15 mins)
+    bool isActiveNow = false;
+    if (bro['updated_at'] != null) {
+      final lastActive = DateTime.parse(bro['updated_at']);
+      final now = DateTime.now();
+      isActiveNow = now.difference(lastActive).inMinutes < 15;
+    }
 
     return Column(
       children: [
@@ -255,17 +261,34 @@ class _MatchScreenState extends State<MatchScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- LATERAL AVATAR ---
+              // --- LATERAL AVATAR + ACTIVE PULSE ---
               GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: bro['id']))),
-                child: Container(
-                  width: 64, height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFF1F5F9),
-                    image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
-                  ),
-                  child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 32) : null,
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 64, height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFFF1F5F9),
+                        image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+                      ),
+                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 32) : null,
+                    ),
+                    if (isActiveNow)
+                      Positioned(
+                        bottom: 2, right: 2,
+                        child: Container(
+                          width: 14, height: 14,
+                          decoration: BoxDecoration(
+                            color: _teal,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2.5),
+                            boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 6, spreadRadius: 2)],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(width: 20),
@@ -278,7 +301,15 @@ class _MatchScreenState extends State<MatchScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
+                        Row(
+                          children: [
+                            Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
+                            if (isActiveNow) ...[
+                              const SizedBox(width: 8),
+                              Text('LIVE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
+                            ],
+                          ],
+                        ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
