@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:bro_app/src/core/services/location_service.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class _MatchScreenState extends State<MatchScreen> {
   String _selectedVibe = 'ALL';
   final Color _teal = const Color(0xFF14B8A6);
 
-  // My Social Cache
+  // Social Intel Cache
   List<String> _myConnections = [];
   List<String> _myHuddles = [];
 
@@ -41,31 +42,31 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   Future<void> _refreshRadar() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
+    
+    // Attempt position, but don't let a null position brick the UI
     _myPosition = await LocationService.updateLocation();
+    
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
     try {
-      // 1. Fetch My Social Cache (Bros and Huddles)
+      // 1. Load Social Graph for Intel Badges
       final myConsRes = await Supabase.instance.client
           .from('conversations')
           .select('user1_id, user2_id')
           .or('user1_id.eq.${user.id},user2_id.eq.${user.id}')
           .eq('status', 'accepted');
-      
-      _myConnections = (myConsRes as List).map((c) {
-        return c['user1_id'] == user.id ? c['user2_id'].toString() : c['user1_id'].toString();
-      }).toList();
+      _myConnections = (myConsRes as List).map((c) => c['user1_id'] == user.id ? c['user2_id'].toString() : c['user1_id'].toString()).toList();
 
       final myHuddlesRes = await Supabase.instance.client
           .from('huddle_members')
           .select('huddle_id')
           .eq('user_id', user.id);
-      
       _myHuddles = (myHuddlesRes as List).map((h) => h['huddle_id'].toString()).toList();
 
-      // 2. Fetch Nearby Bros
+      // 2. Query Bros
       var query = Supabase.instance.client.from('profiles').select().neq('id', user.id);
       
       if (_selectedVibe != 'ALL') {
@@ -76,23 +77,27 @@ class _MatchScreenState extends State<MatchScreen> {
       final allBros = List<Map<String, dynamic>>.from(response);
       List<Map<String, dynamic>> filteredBros = [];
       
-      if (_myPosition != null) {
-        for (var bro in allBros) {
-          if (bro['last_lat'] != null && bro['last_long'] != null) {
-            double distance = LocationService.calculateDistance(
-              _myPosition!.latitude, 
-              _myPosition!.longitude, 
-              bro['last_lat'], 
-              bro['last_long']
-            );
-            if (distance <= _searchRadius) {
-              bro['real_distance'] = distance;
-              filteredBros.add(bro);
-            }
+      // Calculate distances with fail-safes
+      for (var bro in allBros) {
+        if (_myPosition != null && bro['last_lat'] != null && bro['last_long'] != null) {
+          double distance = LocationService.calculateDistance(
+            _myPosition!.latitude, 
+            _myPosition!.longitude, 
+            bro['last_lat'], 
+            bro['last_long']
+          );
+          if (distance <= _searchRadius) {
+            bro['real_distance'] = distance;
+            filteredBros.add(bro);
           }
+        } else if (_myPosition == null) {
+          // Fallback: Show them as 'Local' if we can't get current GPS
+          bro['real_distance'] = 0.0;
+          filteredBros.add(bro);
         }
-        filteredBros.sort((a, b) => (a['real_distance'] as double).compareTo(b['real_distance'] as double));
       }
+      
+      filteredBros.sort((a, b) => (a['real_distance'] as double).compareTo(b['real_distance'] as double));
 
       if (mounted) {
         setState(() {
@@ -101,13 +106,7 @@ class _MatchScreenState extends State<MatchScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error fetching bros: $e');
-      if (mounted) {
-        setState(() {
-          _nearbyBros = [];
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -115,7 +114,7 @@ class _MatchScreenState extends State<MatchScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // --- DISCOVERY COMMAND CENTER ---
+        // --- RADAR COMMAND SECTION ---
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -144,10 +143,7 @@ class _MatchScreenState extends State<MatchScreen> {
                         decoration: BoxDecoration(
                           color: isSelected ? _teal : Colors.transparent,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? _teal : const Color(0xFFF1F5F9),
-                            width: 1.5
-                          ),
+                          border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 1.5),
                         ),
                         child: Text(
                           vibe == 'ALL' ? 'ALL' : '#$vibe',
@@ -163,7 +159,6 @@ class _MatchScreenState extends State<MatchScreen> {
                   },
                 ),
               ),
-              
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: Column(
@@ -199,16 +194,14 @@ class _MatchScreenState extends State<MatchScreen> {
         ),
 
         Expanded(
-          child: _isLoading
+          child: _isLoading && _nearbyBros.isEmpty
               ? _buildPulsingRadar()
-              : _nearbyBros.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: EdgeInsets.zero,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: _nearbyBros.length,
-                      itemBuilder: (context, index) => _buildDiscoveryCard(_nearbyBros[index]),
-                    ),
+              : ListView.builder(
+                  padding: EdgeInsets.zero,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _nearbyBros.length,
+                  itemBuilder: (context, index) => _buildDiscoveryCard(_nearbyBros[index]),
+                ),
         ),
       ],
     );
@@ -218,15 +211,15 @@ class _MatchScreenState extends State<MatchScreen> {
     final broId = bro['id'].toString();
     final avatarUrl = bro['avatar_url'];
     final username = bro['username'] ?? 'Bro';
-    final distance = (bro['real_distance'] as double).toStringAsFixed(1);
-    final vibesValue = bro['vibes'];
-    final vibes = vibesValue is List ? List<String>.from(vibesValue) : <String>[];
+    final distVal = (bro['real_distance'] as double);
+    final distance = distVal == 0.0 ? 'LOCAL' : '${distVal.toStringAsFixed(1)} KM';
     
-    // Check if Active Now
-    bool isActiveNow = false;
+    // --- UTC-FIXED ONLINE STATUS ---
+    bool isOnline = false;
     if (bro['updated_at'] != null) {
       final lastActive = DateTime.parse(bro['updated_at']);
-      isActiveNow = DateTime.now().difference(lastActive).inMinutes < 15;
+      final nowUtc = DateTime.now().toUtc();
+      isOnline = nowUtc.difference(lastActive).inMinutes < 15;
     }
 
     return FutureBuilder<Map<String, dynamic>>(
@@ -255,7 +248,7 @@ class _MatchScreenState extends State<MatchScreen> {
                           ),
                           child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 32) : null,
                         ),
-                        if (isActiveNow)
+                        if (isOnline)
                           Positioned(
                             bottom: 2, right: 2,
                             child: Container(
@@ -283,22 +276,22 @@ class _MatchScreenState extends State<MatchScreen> {
                             Row(
                               children: [
                                 Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
-                                if (isActiveNow) ...[
+                                if (isOnline) ...[
                                   const SizedBox(width: 8),
-                                  Text('LIVE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
+                                  Text('ONLINE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
                                 ],
                               ],
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-                              child: Text('$distance KM', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 0.5)),
+                              child: Text(distance, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 0.5)),
                             ),
                           ],
                         ),
                         const SizedBox(height: 6),
                         
-                        // --- MUTUAL INTEL BADGES ---
+                        // Mutual Intel Badges
                         if (mutualBros > 0 || hasSharedHuddle)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
@@ -319,14 +312,6 @@ class _MatchScreenState extends State<MatchScreen> {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.5),
                         ),
-                        const SizedBox(height: 16),
-                        
-                        if (vibes.isNotEmpty)
-                          Wrap(
-                            spacing: 8,
-                            children: vibes.take(3).map((v) => Text('#$v', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: _teal.withOpacity(0.6)))).toList(),
-                          ),
-                        
                         const SizedBox(height: 20),
                         
                         GestureDetector(
@@ -382,7 +367,6 @@ class _MatchScreenState extends State<MatchScreen> {
 
   Future<Map<String, dynamic>> _loadMutualIntel(String broId) async {
     try {
-      // 1. Get BroX's Connections
       final broConsRes = await Supabase.instance.client
           .from('conversations')
           .select('user1_id, user2_id')
@@ -393,13 +377,11 @@ class _MatchScreenState extends State<MatchScreen> {
         return c['user1_id'].toString() == broId ? c['user2_id'].toString() : c['user1_id'].toString();
       }).toList();
 
-      // 2. Count Intersection
       int mutualCount = 0;
       for (var id in broConnections) {
         if (_myConnections.contains(id)) mutualCount++;
       }
 
-      // 3. Check Shared Huddle
       final broHuddlesRes = await Supabase.instance.client
           .from('huddle_members')
           .select('huddle_id')
@@ -411,10 +393,7 @@ class _MatchScreenState extends State<MatchScreen> {
         if (_myHuddles.contains(hId)) sharedHuddle = true;
       }
 
-      return {
-        'mutualBros': mutualCount,
-        'sharedHuddle': sharedHuddle,
-      };
+      return {'mutualBros': mutualCount, 'sharedHuddle': sharedHuddle};
     } catch (e) {
       return {'mutualBros': 0, 'sharedHuddle': false};
     }
@@ -430,22 +409,6 @@ class _MatchScreenState extends State<MatchScreen> {
           Text(
             'PINGING THE BROHOOD...',
             style: GoogleFonts.poppins(color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          HugeIcon(icon: _myPosition == null ? HugeIcons.strokeRoundedLocation01 : HugeIcons.strokeRoundedRadar01, size: 64, color: const Color(0xFFF1F5F9)),
-          const SizedBox(height: 24),
-          Text(
-            _myPosition == null ? 'GPS SIGNAL REQUIRED 🛰️' : 'THE RADIUS IS QUIET, BRO.',
-            style: GoogleFonts.inter(color: Colors.black26, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1),
           ),
         ],
       ),

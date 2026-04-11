@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:bro_app/src/core/services/location_service.dart';
 import 'package:bro_app/src/features/chat/presentation/bro_direct_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/feed_screen.dart';
 import 'package:bro_app/src/features/huddles/presentation/huddles_screen.dart';
@@ -20,6 +22,30 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color _primaryColor = const Color(0xFF14B8A6); // Urban Teal
+  Timer? _heartbeatTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startHeartbeat();
+  }
+
+  @override
+  void dispose() {
+    _heartbeatTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Tactical Heartbeat: Hyper-reactive 1-minute server pings.
+  void _startHeartbeat() {
+    // Immediate first ping
+    LocationService.updateLocation();
+    
+    _heartbeatTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+       debugPrint('Heartbeat Pulse Sent... 🫀');
+       await LocationService.updateLocation();
+    });
+  }
 
   void _signOut() async {
     final confirm = await showDialog<bool>(
