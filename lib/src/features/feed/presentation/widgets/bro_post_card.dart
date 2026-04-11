@@ -257,8 +257,6 @@ class _BroPostCardState extends State<BroPostCard> {
                                 ],
                               ),
                             ),
-                            // Share (Empty for lateral balance)
-                            const HugeIcon(icon: HugeIcons.strokeRoundedShare01, color: Color(0xFF64748B), size: 18),
                             const SizedBox(width: 20),
                           ],
                         ),
