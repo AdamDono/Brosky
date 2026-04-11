@@ -21,6 +21,10 @@ class _MatchScreenState extends State<MatchScreen> {
   String _selectedVibe = 'ALL';
   final Color _teal = const Color(0xFF14B8A6);
 
+  // My Social Cache
+  List<String> _myConnections = [];
+  List<String> _myHuddles = [];
+
   final List<String> _vibes = [
     'ALL',
     'STRATEGY',
@@ -43,6 +47,25 @@ class _MatchScreenState extends State<MatchScreen> {
     if (user == null) return;
 
     try {
+      // 1. Fetch My Social Cache (Bros and Huddles)
+      final myConsRes = await Supabase.instance.client
+          .from('conversations')
+          .select('user1_id, user2_id')
+          .or('user1_id.eq.${user.id},user2_id.eq.${user.id}')
+          .eq('status', 'accepted');
+      
+      _myConnections = (myConsRes as List).map((c) {
+        return c['user1_id'] == user.id ? c['user2_id'].toString() : c['user1_id'].toString();
+      }).toList();
+
+      final myHuddlesRes = await Supabase.instance.client
+          .from('huddle_members')
+          .select('huddle_id')
+          .eq('user_id', user.id);
+      
+      _myHuddles = (myHuddlesRes as List).map((h) => h['huddle_id'].toString()).toList();
+
+      // 2. Fetch Nearby Bros
       var query = Supabase.instance.client.from('profiles').select().neq('id', user.id);
       
       if (_selectedVibe != 'ALL') {
@@ -92,7 +115,7 @@ class _MatchScreenState extends State<MatchScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // --- TACTICAL DISCOVERY COMMAND CENTER ---
+        // --- DISCOVERY COMMAND CENTER ---
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -100,7 +123,6 @@ class _MatchScreenState extends State<MatchScreen> {
           ),
           child: Column(
             children: [
-              // Vibe Selector
               SizedBox(
                 height: 60,
                 child: ListView.builder(
@@ -142,7 +164,6 @@ class _MatchScreenState extends State<MatchScreen> {
                 ),
               ),
               
-              // Search Radius Control
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: Column(
@@ -177,7 +198,6 @@ class _MatchScreenState extends State<MatchScreen> {
           ),
         ),
 
-        // --- DISCOVERY STREAM ---
         Expanded(
           child: _isLoading
               ? _buildPulsingRadar()
@@ -194,6 +214,212 @@ class _MatchScreenState extends State<MatchScreen> {
     );
   }
 
+  Widget _buildDiscoveryCard(Map<String, dynamic> bro) {
+    final broId = bro['id'].toString();
+    final avatarUrl = bro['avatar_url'];
+    final username = bro['username'] ?? 'Bro';
+    final distance = (bro['real_distance'] as double).toStringAsFixed(1);
+    final vibesValue = bro['vibes'];
+    final vibes = vibesValue is List ? List<String>.from(vibesValue) : <String>[];
+    
+    // Check if Active Now
+    bool isActiveNow = false;
+    if (bro['updated_at'] != null) {
+      final lastActive = DateTime.parse(bro['updated_at']);
+      isActiveNow = DateTime.now().difference(lastActive).inMinutes < 15;
+    }
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _loadMutualIntel(broId),
+      builder: (context, snapshot) {
+        final mutualBros = snapshot.data?['mutualBros'] ?? 0;
+        final hasSharedHuddle = snapshot.data?['sharedHuddle'] ?? false;
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: broId))),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 64, height: 64,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFF1F5F9),
+                            image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+                          ),
+                          child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 32) : null,
+                        ),
+                        if (isActiveNow)
+                          Positioned(
+                            bottom: 2, right: 2,
+                            child: Container(
+                              width: 14, height: 14,
+                              decoration: BoxDecoration(
+                                color: _teal,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2.5),
+                                boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 6, spreadRadius: 2)],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
+                                if (isActiveNow) ...[
+                                  const SizedBox(width: 8),
+                                  Text('LIVE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
+                                ],
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+                              child: Text('$distance KM', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 0.5)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        
+                        // --- MUTUAL INTEL BADGES ---
+                        if (mutualBros > 0 || hasSharedHuddle)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Wrap(
+                              spacing: 6,
+                              children: [
+                                if (mutualBros > 0)
+                                  _buildIntelBadge(HugeIcons.strokeRoundedUserGroup, '$mutualBros MUTUAL'),
+                                if (hasSharedHuddle)
+                                  _buildIntelBadge(HugeIcons.strokeRoundedChampion, 'CO-HUDDLE'),
+                              ],
+                            ),
+                          ),
+
+                        Text(
+                          bro['bio'] ?? 'This bro is silent but steady. Ready to build.',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.5),
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        if (vibes.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            children: vibes.take(3).map((v) => Text('#$v', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: _teal.withOpacity(0.6)))).toList(),
+                          ),
+                        
+                        const SizedBox(height: 20),
+                        
+                        GestureDetector(
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: broId))),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5)
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('CONNECT', style: GoogleFonts.inter(color: const Color(0xFF1E293B), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
+                                const SizedBox(width: 8),
+                                const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: Color(0xFF1E293B), size: 14),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+          ],
+        );
+      }
+    );
+  }
+
+  Widget _buildIntelBadge(dynamic icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: _teal.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _teal.withOpacity(0.12), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HugeIcon(icon: icon, color: _teal, size: 10),
+          const SizedBox(width: 4),
+          Text(label, style: GoogleFonts.inter(color: _teal, fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 0.5)),
+        ],
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> _loadMutualIntel(String broId) async {
+    try {
+      // 1. Get BroX's Connections
+      final broConsRes = await Supabase.instance.client
+          .from('conversations')
+          .select('user1_id, user2_id')
+          .or('user1_id.eq.$broId,user2_id.eq.$broId')
+          .eq('status', 'accepted');
+      
+      final broConnections = (broConsRes as List).map((c) {
+        return c['user1_id'].toString() == broId ? c['user2_id'].toString() : c['user1_id'].toString();
+      }).toList();
+
+      // 2. Count Intersection
+      int mutualCount = 0;
+      for (var id in broConnections) {
+        if (_myConnections.contains(id)) mutualCount++;
+      }
+
+      // 3. Check Shared Huddle
+      final broHuddlesRes = await Supabase.instance.client
+          .from('huddle_members')
+          .select('huddle_id')
+          .eq('user_id', broId);
+      
+      final broHuddles = (broHuddlesRes as List).map((h) => h['huddle_id'].toString()).toList();
+      bool sharedHuddle = false;
+      for (var hId in broHuddles) {
+        if (_myHuddles.contains(hId)) sharedHuddle = true;
+      }
+
+      return {
+        'mutualBros': mutualCount,
+        'sharedHuddle': sharedHuddle,
+      };
+    } catch (e) {
+      return {'mutualBros': 0, 'sharedHuddle': false};
+    }
+  }
+
   Widget _buildPulsingRadar() {
     return Center(
       child: Column(
@@ -203,12 +429,7 @@ class _MatchScreenState extends State<MatchScreen> {
           const SizedBox(height: 32),
           Text(
             'PINGING THE BROHOOD...',
-            style: GoogleFonts.poppins(
-              color: Colors.black26,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 3,
-              fontSize: 11
-            ),
+            style: GoogleFonts.poppins(color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11),
           ),
         ],
       ),
@@ -220,149 +441,14 @@ class _MatchScreenState extends State<MatchScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          HugeIcon(
-            icon: _myPosition == null ? HugeIcons.strokeRoundedLocation01 : HugeIcons.strokeRoundedRadar01, 
-            size: 64, 
-            color: const Color(0xFFF1F5F9)
-          ),
+          HugeIcon(icon: _myPosition == null ? HugeIcons.strokeRoundedLocation01 : HugeIcons.strokeRoundedRadar01, size: 64, color: const Color(0xFFF1F5F9)),
           const SizedBox(height: 24),
           Text(
             _myPosition == null ? 'GPS SIGNAL REQUIRED 🛰️' : 'THE RADIUS IS QUIET, BRO.',
             style: GoogleFonts.inter(color: Colors.black26, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Try expanding your discovery window.',
-            style: GoogleFonts.inter(color: Colors.black12, fontSize: 13, fontWeight: FontWeight.w500),
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDiscoveryCard(Map<String, dynamic> bro) {
-    final avatarUrl = bro['avatar_url'];
-    final username = bro['username'] ?? 'Bro';
-    final distance = (bro['real_distance'] as double).toStringAsFixed(1);
-    final vibes = List<String>.from(bro['vibes'] ?? []);
-    
-    // Check if Active Now (updated_at within 15 mins)
-    bool isActiveNow = false;
-    if (bro['updated_at'] != null) {
-      final lastActive = DateTime.parse(bro['updated_at']);
-      final now = DateTime.now();
-      isActiveNow = now.difference(lastActive).inMinutes < 15;
-    }
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // --- LATERAL AVATAR + ACTIVE PULSE ---
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: bro['id']))),
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 64, height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFF1F5F9),
-                        image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
-                      ),
-                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 32) : null,
-                    ),
-                    if (isActiveNow)
-                      Positioned(
-                        bottom: 2, right: 2,
-                        child: Container(
-                          width: 14, height: 14,
-                          decoration: BoxDecoration(
-                            color: _teal,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2.5),
-                            boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 6, spreadRadius: 2)],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 20),
-              
-              // --- DISCOVERY INTEL ---
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
-                            if (isActiveNow) ...[
-                              const SizedBox(width: 8),
-                              Text('LIVE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
-                            ],
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-                          child: Text('$distance KM', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 0.5)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      bro['bio'] ?? 'This bro is silent but steady. Ready to build.',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.5),
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Vibes Row
-                    if (vibes.isNotEmpty)
-                      Wrap(
-                        spacing: 8,
-                        children: vibes.take(3).map((v) => Text('#$v', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w800, color: _teal.withOpacity(0.6)))).toList(),
-                      ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // Connect Action
-                    GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: bro['id']))),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5)
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('CONNECT', style: GoogleFonts.inter(color: const Color(0xFF1E293B), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
-                            const SizedBox(width: 8),
-                            const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: Color(0xFF1E293B), size: 14),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
-      ],
     );
   }
 }
@@ -393,12 +479,8 @@ class _PulsingRingState extends State<_PulsingRing> with SingleTickerProviderSta
           alignment: Alignment.center,
           children: [
             Container(
-              width: 120 * _controller.value,
-              height: 120 * _controller.value,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: widget.color.withOpacity(1 - _controller.value), width: 3),
-              ),
+              width: 120 * _controller.value, height: 120 * _controller.value,
+              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: widget.color.withOpacity(1 - _controller.value), width: 3)),
             ),
             Container(
               width: 20, height: 20,
