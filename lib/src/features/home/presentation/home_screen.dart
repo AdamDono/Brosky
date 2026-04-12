@@ -270,14 +270,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   GestureDetector(
                     onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())); },
                     child: Container(
-                      width: 44, height: 44,
+                      width: 48, height: 48,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: const Color(0xFFF1F5F9),
                         border: Border.all(color: _primaryColor.withOpacity(0.25), width: 1.5),
                         image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
                       ),
-                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.black26, size: 20) : null,
+                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.black26, size: 22) : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -287,12 +287,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           username,
-                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                         ),
                         if (bio != null && bio.isNotEmpty) ...[
                           const SizedBox(height: 1),
-                          Text(bio, style: GoogleFonts.inter(fontSize: 11, color: Colors.black38, fontWeight: FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(bio, style: GoogleFonts.inter(fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ],
                     ),
@@ -313,7 +313,8 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
               child: Text(
                 '$_broCount Bros  ·  $_huddleCount Squads',
-                style: GoogleFonts.inter(fontSize: 11, color: Colors.black38, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w500),
               ),
             ),
 
@@ -358,9 +359,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: _signOut,
                 child: Row(
                   children: [
-                    const HugeIcon(icon: HugeIcons.strokeRoundedLogout01, color: Colors.redAccent, size: 16),
+                    const HugeIcon(icon: HugeIcons.strokeRoundedLogout01, color: Colors.redAccent, size: 18),
                     const SizedBox(width: 10),
-                    Text('Sign out', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text('Sign out', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 15)),
                   ],
                 ),
               ),
@@ -389,13 +390,13 @@ class _HomeScreenState extends State<HomeScreen> {
             HugeIcon(
               icon: icon,
               color: isSelected ? _primaryColor : const Color(0xFF94A3B8),
-              size: 17,
+              size: 19,
             ),
             const SizedBox(width: 12),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? _primaryColor : const Color(0xFF334155),
               ),
@@ -433,15 +434,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Row(
             children: [
-              HugeIcon(icon: HugeIcons.strokeRoundedNotification01, color: _primaryColor, size: 17),
+              HugeIcon(icon: HugeIcons.strokeRoundedNotification01, color: _primaryColor, size: 19),
               const SizedBox(width: 12),
               Expanded(
-                child: Text('Squad Requests', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: _primaryColor)),
+                child: Text('Squad Requests', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: _primaryColor)),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(color: _primaryColor, borderRadius: BorderRadius.circular(20)),
-                child: Text('$_pendingRequestCount', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10)),
+                child: Text('$_pendingRequestCount', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
               ),
             ],
           ),
