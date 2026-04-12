@@ -59,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 48),
               Text(
                 'Pick Your Vibes',
-                style: GoogleFonts.outfit(
+                style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                 ),
@@ -67,7 +67,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 8),
               Text(
                 'What do you want to talk about today?\nSelect at least 2.',
-                style: GoogleFonts.outfit(
+                style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 16,
                   color: Colors.white60,
                 ),
@@ -99,12 +99,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
                           color: isSelected 
-                            ? const Color(0xFF2DD4BF).withOpacity(0.1)
+                            ? const Color(0xFFFFFFFF).withOpacity(0.1)
                             : const Color(0xFF1E293B),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
                             color: isSelected 
-                              ? const Color(0xFF2DD4BF) 
+                              ? const Color(0xFFFFFFFF) 
                               : Colors.transparent,
                             width: 2,
                           ),
@@ -116,17 +116,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               vibe['icon'],
                               size: 40,
                               color: isSelected 
-                                ? const Color(0xFF2DD4BF) 
+                                ? const Color(0xFFFFFFFF) 
                                 : Colors.white70,
                             ),
                             const SizedBox(height: 12),
                             Text(
                               vibe['name'],
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
+                              style: TextStyle(fontFamily: '.SF Pro Display', 
                                 fontWeight: FontWeight.w600,
                                 color: isSelected 
-                                  ? const Color(0xFF2DD4BF) 
+                                  ? const Color(0xFFFFFFFF) 
                                   : Colors.white,
                               ),
                             ),
@@ -145,7 +145,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: ElevatedButton(
                     onPressed: selectedVibes.length >= 2 ? _saveVibes : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2DD4BF),
+                      backgroundColor: const Color(0xFFFFFFFF),
                       foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -154,7 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                     child: Text(
                       'Let\'s Go',
-                      style: GoogleFonts.outfit(
+                      style: TextStyle(fontFamily: '.SF Pro Display', 
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),

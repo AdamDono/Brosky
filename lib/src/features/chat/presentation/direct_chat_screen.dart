@@ -85,7 +85,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
             const SizedBox(width: 12),
             Text(
               widget.partnerUsername, 
-              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF1E293B)),
+              style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF1E293B)),
             ),
           ],
         ),
@@ -148,12 +148,12 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
           children: [
             Text(
               message['content'] ?? '', 
-              style: GoogleFonts.inter(color: isMe ? Colors.white : const Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
+              style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white : const Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
             ),
             const SizedBox(height: 6),
             Text(
               timeago.format(createdAt), 
-              style: GoogleFonts.inter(color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+              style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -177,12 +177,12 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
             Expanded(
               child: TextField(
                 controller: _messageController, 
-                style: GoogleFonts.inter(color: const Color(0xFF1E293B), fontSize: 15), 
+                style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF1E293B), fontSize: 15), 
                 maxLines: null,
                 keyboardType: TextInputType.multiline,
                 decoration: InputDecoration(
                   hintText: 'Message...', 
-                  hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 15), 
+                  hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 15), 
                   filled: true, 
                   fillColor: const Color(0xFFF1F5F9), 
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), 

@@ -86,13 +86,13 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
           Text(
             'No conversations yet, Bro.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(color: const Color(0xFF1E293B), fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF1E293B), fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'Start a direct chat from a profile.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 14),
+            style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14),
           ),
         ],
       ),
@@ -139,11 +139,11 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
                     children: [
                       Text(
                         convo['partner_username'],
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: const Color(0xFF1E293B), fontSize: 16),
+                        style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, color: const Color(0xFF1E293B), fontSize: 16),
                       ),
                       Text(
                         timeago.format(lastMessageTime, locale: 'en_short'),
-                        style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -152,7 +152,7 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
                     convo['last_message'] ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(fontFamily: '.SF Pro Display', 
                       color: convo['is_from_me'] ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                       fontSize: 14,
                       fontWeight: convo['is_from_me'] ? FontWeight.w400 : FontWeight.w500,

@@ -154,35 +154,35 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
                       const SizedBox(height: 24),
                       Text(
                         widget.huddleName.toUpperCase(),
-                        style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), letterSpacing: -0.5),
+                        style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), letterSpacing: -0.5),
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           const Icon(Icons.people_alt, size: 16, color: Color(0xFF94A3B8)),
                           const SizedBox(width: 6),
-                          Text('$memberCount Bros Enlisted', style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
+                          Text('$memberCount Bros Enlisted', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
                           if (vibe != null) ...[
                             const SizedBox(width: 12),
                             Container(width: 4, height: 4, decoration: const BoxDecoration(color: Color(0xFFCBD5E1), shape: BoxShape.circle)),
                             const SizedBox(width: 12),
-                            Text(vibe.toUpperCase(), style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF14B8A6), fontWeight: FontWeight.w700)),
+                            Text(vibe.toUpperCase(), style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, color: const Color(0xFF14B8A6), fontWeight: FontWeight.w700)),
                           ]
                         ],
                       ),
                       const SizedBox(height: 32),
                       
                       if (description != null && description.isNotEmpty) ...[
-                        Text('MISSION', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                        Text('MISSION', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                         const SizedBox(height: 8),
                         Text(
                           description,
-                          style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF334155), height: 1.5),
+                          style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, color: const Color(0xFF334155), height: 1.5),
                         ),
                         const SizedBox(height: 24),
                       ],
                       if (manifesto != null && manifesto.isNotEmpty) ...[
-                        Text('MANIFESTO / RULES', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                        Text('MANIFESTO / RULES', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w800, letterSpacing: 1.2)),
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -193,7 +193,7 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
                           ),
                           child: Text(
                             manifesto,
-                            style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF1E293B), height: 1.6, fontStyle: FontStyle.italic),
+                            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: const Color(0xFF1E293B), height: 1.6, fontStyle: FontStyle.italic),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -220,7 +220,7 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
       appBar: AppBar(
         title: Text(
           widget.huddleName.toUpperCase(), 
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), fontSize: 16, letterSpacing: 1),
+          style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), fontSize: 16, letterSpacing: 1),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -335,12 +335,12 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
-                      style: GoogleFonts.inter(color: const Color(0xFF1E293B), fontSize: 15),
+                      style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF1E293B), fontSize: 15),
                       maxLines: null,
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
                         hintText: 'Say something...',
-                        hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 15),
+                        hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 15),
                         filled: true,
                         fillColor: const Color(0xFFF1F5F9),
                         border: OutlineInputBorder(
@@ -434,12 +434,12 @@ class _HuddleMessageBubble extends StatelessWidget {
                         children: [
                           Text(
                             username,
-                            style: GoogleFonts.inter(fontSize: 13, color: const Color(0xFF1E293B), fontWeight: FontWeight.bold),
+                            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: const Color(0xFF1E293B), fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(width: 8),
                           Text(
                             timeago.format(DateTime.parse(message['created_at'])),
-                            style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w400),
+                            style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w400),
                           ),
                         ],
                       ),
@@ -488,7 +488,7 @@ class _HuddleMessageBubble extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               child: Text(
                                 message['content'],
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: '.SF Pro Display', 
                                   color: const Color(0xFF1E293B),
                                   fontSize: 15,
                                   fontWeight: FontWeight.w400,

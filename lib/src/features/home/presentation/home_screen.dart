@@ -85,11 +85,11 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('Sign Out?', style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.black)),
-        content: Text('Leave the Brotherhood for now?', style: GoogleFonts.inter(color: Colors.black54)),
+        title: Text('Sign Out?', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold, color: Colors.black)),
+        content: Text('Leave the Brotherhood for now?', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black54)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('CANCEL', style: GoogleFonts.inter(color: Colors.black26, fontWeight: FontWeight.bold))),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('SIGN OUT', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('CANCEL', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26, fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('SIGN OUT', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -143,10 +143,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             title: Text(
               'BROSKY',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w900, 
-                letterSpacing: 4.0, 
-                fontSize: 18, 
+              style: TextStyle(fontFamily: '.SF Pro Display', 
+                fontWeight: FontWeight.w800, 
+                letterSpacing: 2.0, 
+                fontSize: 16, 
                 color: const Color(0xFF1A1D21)
               ),
             ),
@@ -219,8 +219,8 @@ class _HomeScreenState extends State<HomeScreen> {
           showUnselectedLabels: true,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
-          unselectedLabelStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
+          selectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+          unselectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
           items: [
             BottomNavigationBarItem(
               icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedHome01, color: _currentIndex == 0 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
@@ -287,12 +287,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           username,
-                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
+                          style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                         ),
                         if (bio != null && bio.isNotEmpty) ...[
                           const SizedBox(height: 1),
-                          Text(bio, style: GoogleFonts.inter(fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(bio, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ],
                     ),
@@ -314,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 '$_broCount Bros  ·  $_huddleCount Squads',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w500),
+                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w500),
               ),
             ),
 
@@ -359,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     const HugeIcon(icon: HugeIcons.strokeRoundedLogout01, color: Colors.redAccent, size: 18),
                     const SizedBox(width: 10),
-                    Text('Sign out', style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 15)),
+                    Text('Sign out', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 15)),
                   ],
                 ),
               ),
@@ -393,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 12),
             Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: '.SF Pro Display', 
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? _primaryColor : const Color(0xFF334155),
@@ -441,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Text(
                 'Notifications', 
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 15, 
                   fontWeight: hasNotifications ? FontWeight.w700 : FontWeight.w500, 
                   color: hasNotifications ? _primaryColor : const Color(0xFF334155),
@@ -456,7 +456,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))],
                 ),
-                child: Text('$_pendingRequestCount', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
+                child: Text('$_pendingRequestCount', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
               ),
           ],
         ),

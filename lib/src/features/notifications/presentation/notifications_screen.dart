@@ -95,20 +95,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF000000),
       appBar: AppBar(
-        title: Text('Notifications', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text('Notifications', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
             onPressed: _loadNotifications,
-            icon: const Icon(Icons.refresh, color: Color(0xFF2DD4BF)),
+            icon: const Icon(Icons.refresh, color: Color(0xFFFFFFFF)),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)))
           : _notifications.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
@@ -132,7 +132,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Text(
             'No notifications yet, Bro.\nStay active to get updates!',
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16),
+            style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white38, fontSize: 16),
           ),
         ],
       ),
@@ -150,7 +150,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         color: isRead ? const Color(0xFF1E293B) : const Color(0xFF1E293B).withOpacity(0.8),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isRead ? Colors.transparent : const Color(0xFF2DD4BF).withOpacity(0.3),
+          color: isRead ? Colors.transparent : const Color(0xFFFFFFFF).withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -160,7 +160,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: const Color(0xFF2DD4BF),
+              backgroundColor: const Color(0xFFFFFFFF),
               backgroundImage: actorAvatar != null ? NetworkImage(actorAvatar) : null,
               child: actorAvatar == null ? const Icon(Icons.person, color: Colors.black) : null,
             ),
@@ -170,13 +170,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF0F172A),
+                  color: Color(0xFF000000),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   _getNotificationIcon(notif['type']),
                   size: 12,
-                  color: const Color(0xFF2DD4BF),
+                  color: const Color(0xFFFFFFFF),
                 ),
               ),
             ),
@@ -184,7 +184,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         title: Text(
           _getNotificationText(notif),
-          style: GoogleFonts.outfit(
+          style: TextStyle(fontFamily: '.SF Pro Display', 
             color: Colors.white,
             fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
           ),
@@ -198,7 +198,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF2DD4BF),
+                  color: Color(0xFFFFFFFF),
                   shape: BoxShape.circle,
                 ),
               )

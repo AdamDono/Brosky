@@ -141,7 +141,7 @@ class _MatchScreenState extends State<MatchScreen> {
                         ),
                         child: Text(
                           vibe == 'ALL' ? 'ALL' : '#$vibe',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: '.SF Pro Display', 
                             color: isSelected ? Colors.white : const Color(0xFF64748B),
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
@@ -160,8 +160,8 @@ class _MatchScreenState extends State<MatchScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('DISCOVERY RADIUS', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5)),
-                        Text('${_searchRadius.round()} KM', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: _teal)),
+                        Text('DISCOVERY RADIUS', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5)),
+                        Text('${_searchRadius.round()} KM', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w900, color: _teal)),
                       ],
                     ),
                     SliderTheme(
@@ -266,17 +266,17 @@ class _MatchScreenState extends State<MatchScreen> {
                           children: [
                             Row(
                               children: [
-                                Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
+                                Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
                                 if (isOnline) ...[
                                   const SizedBox(width: 8),
-                                  Text('ONLINE', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
+                                  Text('ONLINE', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
                                 ],
                               ],
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
-                              child: Text(distance, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 0.5)),
+                              child: Text(distance, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 0.5)),
                             ),
                           ],
                         ),
@@ -294,7 +294,7 @@ class _MatchScreenState extends State<MatchScreen> {
                               ],
                             ),
                           ),
-                        Text(bro['bio'] ?? 'This bro is silent but steady. Ready to build.', maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.5)),
+                        Text(bro['bio'] ?? 'This bro is silent but steady. Ready to build.', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: const Color(0xFF64748B), height: 1.5)),
                         const SizedBox(height: 20),
                         GestureDetector(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: broId))),
@@ -304,7 +304,7 @@ class _MatchScreenState extends State<MatchScreen> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text('CONNECT', style: GoogleFonts.inter(color: const Color(0xFF1E293B), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
+                                Text('CONNECT', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF1E293B), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
                                 const SizedBox(width: 8),
                                 const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: Color(0xFF1E293B), size: 14),
                               ],
@@ -328,7 +328,7 @@ class _MatchScreenState extends State<MatchScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: _teal.withOpacity(0.06), borderRadius: BorderRadius.circular(6), border: Border.all(color: _teal.withOpacity(0.12), width: 1)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [HugeIcon(icon: icon, color: _teal, size: 10), const SizedBox(width: 4), Text(label, style: GoogleFonts.inter(color: _teal, fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 0.5))]),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [HugeIcon(icon: icon, color: _teal, size: 10), const SizedBox(width: 4), Text(label, style: TextStyle(fontFamily: '.SF Pro Display', color: _teal, fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 0.5))]),
     );
   }
 
@@ -347,7 +347,7 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   Widget _buildPulsingRadar() {
-    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [_PulsingRing(color: _teal), const SizedBox(height: 32), Text('PINGING THE BROHOOD...', style: GoogleFonts.poppins(color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))]));
+    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [_PulsingRing(color: _teal), const SizedBox(height: 32), Text('PINGING THE BROHOOD...', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))]));
   }
 }
 

@@ -147,8 +147,8 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
         ),
         title: Column(
           children: [
-            Text('SQUAD REQUESTS', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), letterSpacing: 2)),
-            Text('Pending Enlistments', style: GoogleFonts.inter(fontSize: 10, color: Colors.black26, fontWeight: FontWeight.w600)),
+            Text('SQUAD REQUESTS', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), letterSpacing: 2)),
+            Text('Pending Enlistments', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, color: Colors.black26, fontWeight: FontWeight.w600)),
           ],
         ),
         bottom: PreferredSize(
@@ -194,7 +194,7 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: Color(0xFF14B8A6), size: 12),
               const SizedBox(width: 6),
-              Text(squadName.toUpperCase(), style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
+              Text(squadName.toUpperCase(), style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
             ]),
           ),
           const SizedBox(height: 16),
@@ -232,13 +232,13 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(username, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
+                  Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
                   const SizedBox(height: 2),
-                  Text('Wants to join your squad', style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
+                  Text('Wants to join your squad', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   GestureDetector(
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: request['user_id'].toString()))),
-                    child: Text('View Profile →', style: GoogleFonts.inter(fontSize: 11, color: _teal, fontWeight: FontWeight.w700)),
+                    child: Text('View Profile →', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 11, color: _teal, fontWeight: FontWeight.w700)),
                   ),
                 ]),
               ),
@@ -254,7 +254,7 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5)),
-                    child: Center(child: Text('REJECT', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black38, letterSpacing: 1.5))),
+                    child: Center(child: Text('REJECT', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black38, letterSpacing: 1.5))),
                   ),
                 ),
               ),
@@ -265,7 +265,7 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(color: _teal, borderRadius: BorderRadius.circular(14)),
-                    child: Center(child: Text('ACCEPT', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5))),
+                    child: Center(child: Text('ACCEPT', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5))),
                   ),
                 ),
               ),
@@ -283,9 +283,9 @@ class _SquadRequestsScreenState extends State<SquadRequestsScreen> {
         children: [
           const HugeIcon(icon: HugeIcons.strokeRoundedCheckmarkCircle01, size: 64, color: Color(0xFFF1F5F9)),
           const SizedBox(height: 16),
-          Text('All Clear.', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
+          Text('All Clear.', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
           const SizedBox(height: 8),
-          Text('No pending squad requests.', style: GoogleFonts.inter(fontSize: 14, color: Colors.black26, fontWeight: FontWeight.w600)),
+          Text('No pending squad requests.', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black26, fontWeight: FontWeight.w600)),
         ],
       ),
     );

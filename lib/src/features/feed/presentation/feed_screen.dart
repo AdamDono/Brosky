@@ -61,10 +61,10 @@ class _FeedScreenState extends State<FeedScreen> {
                     controller: _searchController,
                     textAlignVertical: TextAlignVertical.center,
                     onChanged: (val) => setState(() {}),
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: const Color(0xFF1A1D21), fontSize: 15),
+                    style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w500, color: const Color(0xFF1A1D21), fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Search the Brohood',
-                      hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 15, fontWeight: FontWeight.w400),
+                      hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w400),
                       prefixIcon: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 14),
                         child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, color: Color(0xFF64748B), size: 18),
@@ -102,11 +102,11 @@ class _FeedScreenState extends State<FeedScreen> {
                         ),
                         child: Text(
                           vibe == 'ALL' ? 'ALL' : '#$vibe',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: '.SF Pro Display', 
                             color: isSelected ? Colors.white : const Color(0xFF64748B),
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-                            letterSpacing: 1,
+                            fontSize: 11,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ),
@@ -132,7 +132,7 @@ class _FeedScreenState extends State<FeedScreen> {
               }
               
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(child: Text('The barbershop is empty, Bro.', style: GoogleFonts.inter(color: Colors.black26)));
+                return Center(child: Text('The barbershop is empty, Bro.', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26)));
               }
 
               // --- SURGICAL FILTERING (24H + SEARCH + VIBE) ---
@@ -158,7 +158,7 @@ class _FeedScreenState extends State<FeedScreen> {
                         ? 'The stream has evaporated. Start a new one.' 
                         : 'No posts found in #$_selectedVibe', 
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(color: Colors.black26, fontWeight: FontWeight.w600)
+                      style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black38, fontWeight: FontWeight.w500, fontSize: 13)
                     ),
                   )
                 );
