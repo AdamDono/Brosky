@@ -14,6 +14,7 @@ class HuddlesScreen extends StatefulWidget {
 
 class _HuddlesScreenState extends State<HuddlesScreen> {
   bool _isLoading = true;
+  bool _showJoined = true;
   List<Map<String, dynamic>> _huddles = [];
   String _selectedVibe = 'ALL';
   final Color _teal = const Color(0xFF14B8A6);
@@ -74,12 +75,40 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
       children: [
         Container(
           decoration: BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1))),
-          child: Column(children: [_buildVibeSelector(), _buildSortBar()]),
+          child: Column(
+            children: [
+              _buildVibeSelector(),
+              _buildTabSwitcher(),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
         Expanded(
           child: _isLoading && _huddles.isEmpty
               ? _buildLoadingState()
-              : _huddles.isEmpty ? _buildEmptyState() : ListView.builder(padding: EdgeInsets.zero, physics: const BouncingScrollPhysics(), itemCount: _huddles.length, itemBuilder: (ctx, idx) => _buildHuddleCard(_huddles[idx])),
+              : _huddles.isEmpty 
+                  ? _buildEmptyState() 
+                  : Builder(
+                      builder: (ctx) {
+                        final myHuddles = _huddles.where((h) => _joinedHuddleIds.contains(h['id'].toString())).toList();
+                        final globalHuddles = _huddles.where((h) => !_joinedHuddleIds.contains(h['id'].toString())).toList();
+                        final targetList = _showJoined ? myHuddles : globalHuddles;
+
+                        if (targetList.isEmpty) {
+                           return Center(child: Padding(
+                             padding: const EdgeInsets.all(40.0),
+                             child: Text(_showJoined ? 'You have not joined any squads yet.' : 'No new squads to discover.', textAlign: TextAlign.center, style: const TextStyle(fontFamily: '.SF Pro Display', color: Colors.black38, fontWeight: FontWeight.w500, fontSize: 13)),
+                           ));
+                        }
+
+                        return ListView.builder(
+                          padding: EdgeInsets.zero, 
+                          physics: const BouncingScrollPhysics(), 
+                          itemCount: targetList.length,
+                          itemBuilder: (context, index) => _buildHuddleCard(targetList[index])
+                        );
+                      }
+                    ),
         ),
       ],
     );
@@ -110,12 +139,49 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
     );
   }
 
-  Widget _buildSortBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      width: double.infinity,
-      decoration: BoxDecoration(color: const Color(0xFFF8FAFC), border: Border(top: BorderSide(color: Colors.black.withOpacity(0.02), width: 1))),
-      child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedChampion, color: Colors.black26, size: 14), const SizedBox(width: 8), Text('GLOBAL BROHOOD STREAM', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5))]),
+  Widget _buildTabSwitcher() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _showJoined = true),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _showJoined ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: _showJoined ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))] : [],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('JOINED', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: _showJoined ? FontWeight.w800 : FontWeight.w600, color: _showJoined ? const Color(0xFF1E293B) : const Color(0xFF94A3B8))),
+                )
+              )
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _showJoined = false),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: !_showJoined ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: !_showJoined ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))] : [],
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('DISCOVER', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: !_showJoined ? FontWeight.w800 : FontWeight.w600, color: !_showJoined ? const Color(0xFF1E293B) : const Color(0xFF94A3B8))),
+                )
+              )
+            ),
+          ]
+        )
+      )
     );
   }
 
