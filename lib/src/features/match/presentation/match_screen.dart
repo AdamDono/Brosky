@@ -45,14 +45,12 @@ class _MatchScreenState extends State<MatchScreen> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     
-    // Attempt position, but don't let a null position brick the UI
     _myPosition = await LocationService.updateLocation();
     
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
     try {
-      // 1. Load Social Graph for Intel Badges
       final myConsRes = await Supabase.instance.client
           .from('conversations')
           .select('user1_id, user2_id')
@@ -66,7 +64,6 @@ class _MatchScreenState extends State<MatchScreen> {
           .eq('user_id', user.id);
       _myHuddles = (myHuddlesRes as List).map((h) => h['huddle_id'].toString()).toList();
 
-      // 2. Query Bros
       var query = Supabase.instance.client.from('profiles').select().neq('id', user.id);
       
       if (_selectedVibe != 'ALL') {
@@ -77,7 +74,6 @@ class _MatchScreenState extends State<MatchScreen> {
       final allBros = List<Map<String, dynamic>>.from(response);
       List<Map<String, dynamic>> filteredBros = [];
       
-      // Calculate distances with fail-safes
       for (var bro in allBros) {
         if (_myPosition != null && bro['last_lat'] != null && bro['last_long'] != null) {
           double distance = LocationService.calculateDistance(
@@ -91,7 +87,6 @@ class _MatchScreenState extends State<MatchScreen> {
             filteredBros.add(bro);
           }
         } else if (_myPosition == null) {
-          // Fallback: Show them as 'Local' if we can't get current GPS
           bro['real_distance'] = 0.0;
           filteredBros.add(bro);
         }
@@ -114,7 +109,6 @@ class _MatchScreenState extends State<MatchScreen> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // --- RADAR COMMAND SECTION ---
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -192,7 +186,6 @@ class _MatchScreenState extends State<MatchScreen> {
             ],
           ),
         ),
-
         Expanded(
           child: _isLoading && _nearbyBros.isEmpty
               ? _buildPulsingRadar()
@@ -214,7 +207,6 @@ class _MatchScreenState extends State<MatchScreen> {
     final distVal = (bro['real_distance'] as double);
     final distance = distVal == 0.0 ? 'LOCAL' : '${distVal.toStringAsFixed(1)} KM';
     
-    // --- UTC-FIXED ONLINE STATUS ---
     bool isOnline = false;
     if (bro['updated_at'] != null) {
       final lastActive = DateTime.parse(bro['updated_at']);
@@ -265,7 +257,6 @@ class _MatchScreenState extends State<MatchScreen> {
                     ),
                   ),
                   const SizedBox(width: 20),
-                  
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,8 +281,6 @@ class _MatchScreenState extends State<MatchScreen> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        
-                        // Mutual Intel Badges
                         if (mutualBros > 0 || hasSharedHuddle)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 8.0),
@@ -305,24 +294,13 @@ class _MatchScreenState extends State<MatchScreen> {
                               ],
                             ),
                           ),
-
-                        Text(
-                          bro['bio'] ?? 'This bro is silent but steady. Ready to build.',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.5),
-                        ),
+                        Text(bro['bio'] ?? 'This bro is silent but steady. Ready to build.', maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.5)),
                         const SizedBox(height: 20),
-                        
                         GestureDetector(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: broId))),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5)
-                            ),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5)),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -349,77 +327,33 @@ class _MatchScreenState extends State<MatchScreen> {
   Widget _buildIntelBadge(dynamic icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: _teal.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: _teal.withOpacity(0.12), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HugeIcon(icon: icon, color: _teal, size: 10),
-          const SizedBox(width: 4),
-          Text(label, style: GoogleFonts.inter(color: _teal, fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 0.5)),
-        ],
-      ),
+      decoration: BoxDecoration(color: _teal.withOpacity(0.06), borderRadius: BorderRadius.circular(6), border: Border.all(color: _teal.withOpacity(0.12), width: 1)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [HugeIcon(icon: icon, color: _teal, size: 10), const SizedBox(width: 4), Text(label, style: GoogleFonts.inter(color: _teal, fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 0.5))]),
     );
   }
 
   Future<Map<String, dynamic>> _loadMutualIntel(String broId) async {
     try {
-      final broConsRes = await Supabase.instance.client
-          .from('conversations')
-          .select('user1_id, user2_id')
-          .or('user1_id.eq.$broId,user2_id.eq.$broId')
-          .eq('status', 'accepted');
-      
-      final broConnections = (broConsRes as List).map((c) {
-        return c['user1_id'].toString() == broId ? c['user2_id'].toString() : c['user1_id'].toString();
-      }).toList();
-
+      final broConsRes = await Supabase.instance.client.from('conversations').select('user1_id, user2_id').or('user1_id.eq.$broId,user2_id.eq.$broId').eq('status', 'accepted');
+      final broConnections = (broConsRes as List).map((c) => c['user1_id'].toString() == broId ? c['user2_id'].toString() : c['user1_id'].toString()).toList();
       int mutualCount = 0;
-      for (var id in broConnections) {
-        if (_myConnections.contains(id)) mutualCount++;
-      }
-
-      final broHuddlesRes = await Supabase.instance.client
-          .from('huddle_members')
-          .select('huddle_id')
-          .eq('user_id', broId);
-      
+      for (var id in broConnections) { if (_myConnections.contains(id)) mutualCount++; }
+      final broHuddlesRes = await Supabase.instance.client.from('huddle_members').select('huddle_id').eq('user_id', broId);
       final broHuddles = (broHuddlesRes as List).map((h) => h['huddle_id'].toString()).toList();
       bool sharedHuddle = false;
-      for (var hId in broHuddles) {
-        if (_myHuddles.contains(hId)) sharedHuddle = true;
-      }
-
+      for (var hId in broHuddles) { if (_myHuddles.contains(hId)) sharedHuddle = true; }
       return {'mutualBros': mutualCount, 'sharedHuddle': sharedHuddle};
-    } catch (e) {
-      return {'mutualBros': 0, 'sharedHuddle': false};
-    }
+    } catch (e) { return {'mutualBros': 0, 'sharedHuddle': false}; }
   }
 
   Widget _buildPulsingRadar() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _PulsingRing(color: _teal),
-          const SizedBox(height: 32),
-          Text(
-            'PINGING THE BROHOOD...',
-            style: GoogleFonts.poppins(color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11),
-          ),
-        ],
-      ),
-    );
+    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [_PulsingRing(color: _teal), const SizedBox(height: 32), Text('PINGING THE BROHOOD...', style: GoogleFonts.poppins(color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))]));
   }
 }
 
 class _PulsingRing extends StatefulWidget {
   final Color color;
   const _PulsingRing({required this.color});
-
   @override
   State<_PulsingRing> createState() => _PulsingRingState();
 }
@@ -427,10 +361,7 @@ class _PulsingRing extends StatefulWidget {
 class _PulsingRingState extends State<_PulsingRing> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))..repeat();
-  }
+  void initState() { super.initState(); _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))..repeat(); }
   @override
   void dispose() { _controller.dispose(); super.dispose(); }
   @override
@@ -438,19 +369,10 @@ class _PulsingRingState extends State<_PulsingRing> with SingleTickerProviderSta
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 120 * _controller.value, height: 120 * _controller.value,
-              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: widget.color.withOpacity(1 - _controller.value), width: 3)),
-            ),
-            Container(
-              width: 20, height: 20,
-              decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: widget.color.withOpacity(0.4), blurRadius: 20, spreadRadius: 4)]),
-            ),
-          ],
-        );
+        return Stack(alignment: Alignment.center, children: [
+          Container(width: 120 * _controller.value, height: 120 * _controller.value, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: widget.color.withOpacity(1 - _controller.value), width: 3))),
+          Container(width: 20, height: 20, decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle, boxShadow: [BoxShadow(color: widget.color.withOpacity(0.4), blurRadius: 20, spreadRadius: 4)])),
+        ]);
       },
     );
   }
