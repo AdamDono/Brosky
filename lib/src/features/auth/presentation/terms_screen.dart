@@ -17,7 +17,7 @@ class TermsScreen extends StatelessWidget {
         ),
         title: Text(
           'THE BROTHERHOOD PACT',
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: '.SF Pro Display', 
             fontWeight: FontWeight.w900,
             fontSize: 16,
             color: Colors.black,
@@ -54,7 +54,7 @@ class TermsScreen extends StatelessWidget {
             Center(
               child: Text(
                 'STAY AUTHENTIC. STAY BRO.',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontWeight: FontWeight.w800,
                   fontSize: 12,
                   color: Colors.black26,
@@ -75,7 +75,7 @@ class TermsScreen extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: '.SF Pro Display', 
             fontWeight: FontWeight.bold,
             fontSize: 18,
             color: const Color(0xFF14B8A6), // Teal accent
@@ -84,7 +84,7 @@ class TermsScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           content,
-          style: GoogleFonts.inter(
+          style: TextStyle(fontFamily: '.SF Pro Display', 
             fontSize: 15,
             color: Colors.black54,
             height: 1.6,
