@@ -101,7 +101,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
+        backgroundColor: Color(0xFFF8FAFC),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6))),
       );
     }
 
@@ -109,19 +110,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bio = _profile?['bio'] ?? 'Building the future of connection 🚀';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.settings_outlined, color: Colors.white),
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFF1E293B)),
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadProfile,
-        color: const Color(0xFFFFFFFF),
+        color: const Color(0xFF14B8A6),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -131,12 +134,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Center(
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundColor: const Color(0xFFFFFFFF),
+                  backgroundColor: const Color(0xFFE2E8F0),
                   backgroundImage: _profile?['avatar_url'] != null 
                     ? NetworkImage(_profile!['avatar_url']) 
                     : null,
                   child: _profile?['avatar_url'] == null 
-                    ? const Icon(Icons.person, size: 60, color: Colors.black)
+                    ? const Icon(Icons.person, size: 60, color: Colors.white)
                     : null,
                 ),
               ),
@@ -144,8 +147,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 username,
                 style: TextStyle(fontFamily: '.SF Pro Display', 
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
                 ),
               ),
               const SizedBox(height: 8),
@@ -154,7 +158,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 14,
-                  color: Colors.white60,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF64748B),
                   height: 1.5,
                 ),
               ),
@@ -174,13 +179,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.white24),
+                  side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+                  backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
-                child: Text(
+                child: const Text(
                   'Edit Profile',
-                  style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white),
+                  style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF1E293B), fontWeight: FontWeight.w600, fontSize: 13),
                 ),
               ),
               
@@ -222,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               
               const SizedBox(height: 32),
-              const Divider(color: Colors.white10),
+              const Divider(color: Color(0xFFF1F5F9), thickness: 1),
               const SizedBox(height: 16),
   
               // Settings / Menu Items
@@ -236,7 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: _signOut,
                 child: Text(
                   'Sign Out',
-                  style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent),
+                  style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ),
               const SizedBox(height: 40),
@@ -254,15 +260,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           value,
           style: TextStyle(fontFamily: '.SF Pro Display', 
             fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1E293B),
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           label,
           style: TextStyle(fontFamily: '.SF Pro Display', 
             fontSize: 12,
-            color: Colors.white54,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF94A3B8),
           ),
         ),
       ],
@@ -275,28 +283,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white10,
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: Colors.white, size: 20),
+        child: Icon(icon, color: const Color(0xFF64748B), size: 20),
       ),
       title: Text(
         title,
         style: TextStyle(fontFamily: '.SF Pro Display', 
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontSize: 15,
+          color: const Color(0xFF1E293B),
+          fontWeight: FontWeight.w600,
         ),
       ),
       trailing: badge 
           ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFFFFF),
-                borderRadius: BorderRadius.circular(4),
+                color: const Color(0xFF14B8A6),
+                borderRadius: BorderRadius.circular(6),
               ),
-              child: const Text('PRO', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+              child: const Text('PRO', style: TextStyle(color: Colors.white, fontFamily: '.SF Pro Display', fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1)),
             )
-          : const Icon(Icons.chevron_right, color: Colors.white24),
+          : const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1)),
     );
   }
 }
