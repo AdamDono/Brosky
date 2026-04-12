@@ -64,7 +64,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               onPressed: () => Navigator.pop(context),
               icon: const HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01, color: Colors.black, size: 24),
             ),
-            title: Text('CONVERSATION', style: GoogleFonts.poppins(fontWeight: FontWeight.w900, letterSpacing: 4, fontSize: 13, color: Colors.black)),
+            title: Text('CONVERSATION', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, letterSpacing: 4, fontSize: 13, color: Colors.black)),
           ),
         ),
       ),
@@ -131,10 +131,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     child: TextField(
                       controller: _commentController,
                       maxLines: null,
-                      style: GoogleFonts.inter(fontSize: 15, color: const Color(0xFF1E293B)),
+                      style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, color: const Color(0xFF1E293B)),
                       decoration: InputDecoration(
                         hintText: 'Share your perspective...',
-                        hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontWeight: FontWeight.w400),
+                        hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontWeight: FontWeight.w400),
                         border: InputBorder.none,
                       ),
                     ),
@@ -152,7 +152,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     ),
                     child: Text(
                       'POST', 
-                      style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1)
+                      style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1)
                     ),
                   ),
                 ),
@@ -191,8 +191,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
-                      Text(timeago.format(createdAt).toUpperCase(), style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                      Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
+                      Text(timeago.format(createdAt).toUpperCase(), style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
                     ],
                   ),
                 ],
@@ -200,7 +200,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               const SizedBox(height: 24),
               Text(
                 widget.post['content'] ?? '', 
-                style: GoogleFonts.inter(fontSize: 22, height: 1.4, color: const Color(0xFF0F172A), fontWeight: FontWeight.w500, letterSpacing: -0.2)
+                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, height: 1.4, color: const Color(0xFF0F172A), fontWeight: FontWeight.w500, letterSpacing: -0.2)
               ),
               if (widget.post['image_url'] != null)
                 Padding(
@@ -247,13 +247,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B))),
+                        Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B))),
                         const SizedBox(width: 8),
-                        Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
+                        Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text(comment['content'] ?? '', style: GoogleFonts.inter(fontSize: 16, height: 1.5, color: const Color(0xFF334155))),
+                    Text(comment['content'] ?? '', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, height: 1.5, color: const Color(0xFF334155))),
                   ],
                 ),
               ),

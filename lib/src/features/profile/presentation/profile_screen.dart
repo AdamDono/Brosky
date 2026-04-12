@@ -77,7 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Successfully Signed Out! See you soon, Bro. 👊'),
-            backgroundColor: Color(0xFF2DD4BF),
+            backgroundColor: Color(0xFFFFFFFF),
           ),
         );
         Navigator.of(context).pushAndRemoveUntil(
@@ -101,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF))),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
       );
     }
 
@@ -121,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadProfile,
-        color: const Color(0xFF2DD4BF),
+        color: const Color(0xFFFFFFFF),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -131,7 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Center(
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundColor: const Color(0xFF2DD4BF),
+                  backgroundColor: const Color(0xFFFFFFFF),
                   backgroundImage: _profile?['avatar_url'] != null 
                     ? NetworkImage(_profile!['avatar_url']) 
                     : null,
@@ -143,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               Text(
                 username,
-                style: GoogleFonts.outfit(
+                style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -152,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 bio,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
+                style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 14,
                   color: Colors.white60,
                   height: 1.5,
@@ -180,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Text(
                   'Edit Profile',
-                  style: GoogleFonts.outfit(color: Colors.white),
+                  style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white),
                 ),
               ),
               
@@ -236,7 +236,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onPressed: _signOut,
                 child: Text(
                   'Sign Out',
-                  style: GoogleFonts.outfit(color: Colors.redAccent),
+                  style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent),
                 ),
               ),
               const SizedBox(height: 40),
@@ -252,15 +252,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Text(
           value,
-          style: GoogleFonts.outfit(
+          style: TextStyle(fontFamily: '.SF Pro Display', 
             fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF2DD4BF),
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
           ),
         ),
         Text(
           label,
-          style: GoogleFonts.outfit(
+          style: TextStyle(fontFamily: '.SF Pro Display', 
             fontSize: 12,
             color: Colors.white54,
           ),
@@ -282,7 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       title: Text(
         title,
-        style: GoogleFonts.outfit(
+        style: TextStyle(fontFamily: '.SF Pro Display', 
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -291,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF2DD4BF),
+                color: const Color(0xFFFFFFFF),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text('PRO', style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),

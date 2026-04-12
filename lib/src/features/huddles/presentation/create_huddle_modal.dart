@@ -140,11 +140,11 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('ENLISTMENT PROTOCOL', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 2)),
+                  Text('ENLISTMENT PROTOCOL', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 2)),
                   const SizedBox(height: 4),
-                  Text(_currentStep == 0 ? 'STEP 01: IDENTITY' : _currentStep == 1 ? 'STEP 02: PURPOSE' : 'STEP 03: PROTOCOL', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
+                  Text(_currentStep == 0 ? 'STEP 01: IDENTITY' : _currentStep == 1 ? 'STEP 02: PURPOSE' : 'STEP 03: PROTOCOL', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
                 ]),
-                Text('${_currentStep + 1}/3', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: _teal)),
+                Text('${_currentStep + 1}/3', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w900, color: _teal)),
               ],
             ),
           ),
@@ -162,7 +162,7 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
                     child: Container(
                       height: 56,
                       decoration: BoxDecoration(color: _currentStep == 2 ? _teal : const Color(0xFF1E293B), borderRadius: BorderRadius.circular(20)),
-                      child: Center(child: _isSubmitting ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2) : Text(_currentStep == 2 ? 'DEPLOY SQUAD' : 'NEXT COMMAND', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5))),
+                      child: Center(child: _isSubmitting ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2) : Text(_currentStep == 2 ? 'DEPLOY SQUAD' : 'NEXT COMMAND', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1.5))),
                     ),
                   ),
                 ),
@@ -194,11 +194,11 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _buildLabel('SQUAD DESCRIPTION'),
-        TextField(controller: _descriptionController, maxLines: 4, style: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF1E293B), fontWeight: FontWeight.w600), decoration: InputDecoration(hintText: 'Define the mission objective...', hintStyle: GoogleFonts.inter(color: Colors.black12, fontWeight: FontWeight.w600), filled: true, fillColor: const Color(0xFFF8FAFC), border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none), contentPadding: const EdgeInsets.all(20))),
+        TextField(controller: _descriptionController, maxLines: 4, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, color: const Color(0xFF1E293B), fontWeight: FontWeight.w600), decoration: InputDecoration(hintText: 'Define the mission objective...', hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black12, fontWeight: FontWeight.w600), filled: true, fillColor: const Color(0xFFF8FAFC), border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none), contentPadding: const EdgeInsets.all(20))),
         const SizedBox(height: 24), _buildLabel('TARGET CORRIDOR'), const SizedBox(height: 12),
         Wrap(spacing: 8, runSpacing: 8, children: _vibes.map((vibe) {
           final isSelected = _selectedVibe == vibe;
-          return GestureDetector(onTap: () => setState(() => _selectedVibe = vibe), child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: isSelected ? _teal : Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 1.5)), child: Text('#$vibe', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w900, color: isSelected ? Colors.white : const Color(0xFF64748B), letterSpacing: 1))));
+          return GestureDetector(onTap: () => setState(() => _selectedVibe = vibe), child: Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), decoration: BoxDecoration(color: isSelected ? _teal : Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 1.5)), child: Text('#$vibe', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 11, fontWeight: FontWeight.w900, color: isSelected ? Colors.white : const Color(0xFF64748B), letterSpacing: 1))));
         }).toList()),
       ]),
     );
@@ -212,7 +212,7 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
         _buildProtocolButton(true, 'OPEN RANGE', 'Anyone can enter.', HugeIcons.strokeRoundedUserGroup), const SizedBox(height: 12),
         _buildProtocolButton(false, 'RESTRICTED SQUAD', 'Approval required.', HugeIcons.strokeRoundedPassport),
         const SizedBox(height: 24),
-        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: _teal.withOpacity(0.05), borderRadius: BorderRadius.circular(20), border: Border.all(color: _teal.withOpacity(0.1), width: 1)), child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, color: Color(0xFF14B8A6), size: 18), const SizedBox(width: 12), Expanded(child: Text('Every new squad begins with a clear mission.', style: GoogleFonts.inter(fontSize: 12, color: _teal, fontWeight: FontWeight.w700, height: 1.4)))])),
+        Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: _teal.withOpacity(0.05), borderRadius: BorderRadius.circular(20), border: Border.all(color: _teal.withOpacity(0.1), width: 1)), child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedInformationCircle, color: Color(0xFF14B8A6), size: 18), const SizedBox(width: 12), Expanded(child: Text('Every new squad begins with a clear mission.', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, color: _teal, fontWeight: FontWeight.w700, height: 1.4)))])),
         const SizedBox(height: 12),
       ]),
     );
@@ -222,10 +222,10 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
     final isSelected = _isPublic == value;
     return GestureDetector(
       onTap: () => setState(() => _isPublic = value),
-      child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: isSelected ? Colors.white : const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(20), border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 2)), child: Row(children: [HugeIcon(icon: icon, color: isSelected ? _teal : const Color(0xFFCBD5E1), size: 24), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))), const SizedBox(height: 4), Text(sub, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)))])), if (isSelected) HugeIcon(icon: HugeIcons.strokeRoundedTick01, color: _teal, size: 20)])),
+      child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: isSelected ? Colors.white : const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(20), border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 2)), child: Row(children: [HugeIcon(icon: icon, color: isSelected ? _teal : const Color(0xFFCBD5E1), size: 24), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))), const SizedBox(height: 4), Text(sub, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF64748B)))])), if (isSelected) HugeIcon(icon: HugeIcons.strokeRoundedTick01, color: _teal, size: 20)])),
     );
   }
 
-  Widget _buildLabel(String text) { return Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(text, style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5))); }
-  Widget _buildTextField(TextEditingController controller, String hint) { return TextField(controller: controller, style: GoogleFonts.inter(fontSize: 16, color: const Color(0xFF1E293B), fontWeight: FontWeight.w900), decoration: InputDecoration(hintText: hint, hintStyle: GoogleFonts.inter(color: Colors.black12, fontWeight: FontWeight.w900), filled: true, fillColor: const Color(0xFFF8FAFC), border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18))); }
+  Widget _buildLabel(String text) { return Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(text, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5))); }
+  Widget _buildTextField(TextEditingController controller, String hint) { return TextField(controller: controller, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, color: const Color(0xFF1E293B), fontWeight: FontWeight.w900), decoration: InputDecoration(hintText: hint, hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black12, fontWeight: FontWeight.w900), filled: true, fillColor: const Color(0xFFF8FAFC), border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none), contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18))); }
 }

@@ -45,7 +45,6 @@ class LocationService {
         await _client.from('profiles').update({
           'last_lat': position.latitude,
           'last_long': position.longitude,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
         }).eq('id', user.id);
       }
 

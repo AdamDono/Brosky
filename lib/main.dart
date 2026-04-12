@@ -27,7 +27,7 @@ class BroApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color primaryIndigo = Color(0xFF6366F1);
+    const Color primaryIndigo = Color(0xFF14B8A6);
 
     return MaterialApp(
       title: 'BROSKY',
@@ -38,9 +38,9 @@ class BroApp extends StatelessWidget {
         primaryColor: primaryIndigo,
         canvasColor: const Color(0xFF111111),
         textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-          displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white),
-          titleLarge: GoogleFonts.inter(fontWeight: FontWeight.w800, color: Colors.white),
-          bodyMedium: GoogleFonts.inter(color: Colors.white70),
+          displayLarge: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, color: Colors.white),
+          titleLarge: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, color: Colors.white),
+          bodyMedium: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white70),
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
@@ -152,7 +152,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 32),
             Text(
               'BROSKY',
-              style: GoogleFonts.outfit(
+              style: TextStyle(fontFamily: '.SF Pro Display', 
                 fontSize: 52,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 8,
@@ -162,7 +162,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 8),
             Text(
               'The digital corner store.',
-              style: GoogleFonts.outfit(
+              style: TextStyle(fontFamily: '.SF Pro Display', 
                 fontSize: 16,
                 color: Colors.white70,
                 letterSpacing: 1.2,

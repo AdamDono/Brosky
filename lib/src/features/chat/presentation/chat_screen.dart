@@ -63,7 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final myId = Supabase.instance.client.auth.currentUser!.id;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF000000),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
@@ -76,7 +76,7 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: const Color(0xFF2DD4BF),
+              backgroundColor: const Color(0xFFFFFFFF),
               backgroundImage: widget.otherUserAvatar != null 
                   ? NetworkImage(widget.otherUserAvatar!) 
                   : null,
@@ -90,11 +90,11 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Text(
                   widget.otherUserName,
-                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const Text(
                   'Online', // Mock status for now
-                  style: TextStyle(color: Color(0xFF2DD4BF), fontSize: 10),
+                  style: TextStyle(color: Color(0xFFFFFFFF), fontSize: 10),
                 ),
               ],
             ),
@@ -117,7 +117,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   }),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
                 }
 
                 final messages = snapshot.data!;
@@ -146,7 +146,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                         decoration: BoxDecoration(
-                          color: isMe ? const Color(0xFF2DD4BF) : const Color(0xFF1E293B),
+                          color: isMe ? const Color(0xFFFFFFFF) : const Color(0xFF1E293B),
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(16),
                             topRight: const Radius.circular(16),
@@ -191,7 +191,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       hintText: 'Type a message...',
                       hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
-                      fillColor: const Color(0xFF0F172A),
+                      fillColor: const Color(0xFF000000),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
@@ -200,7 +200,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 const SizedBox(width: 8),
                 CircleAvatar(
-                  backgroundColor: const Color(0xFF2DD4BF),
+                  backgroundColor: const Color(0xFFFFFFFF),
                   child: IconButton(
                     icon: const Icon(Icons.send, color: Colors.black, size: 20),
                     onPressed: _sendMessage,

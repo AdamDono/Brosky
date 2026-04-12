@@ -31,7 +31,7 @@ class _AuthScreenState extends State<AuthScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+          style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w600, color: Colors.white),
         ),
         backgroundColor: Colors.redAccent.shade400,
         behavior: SnackBarBehavior.floating,
@@ -47,7 +47,7 @@ class _AuthScreenState extends State<AuthScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+          style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w600, color: Colors.white),
         ),
         backgroundColor: _primaryColor,
         behavior: SnackBarBehavior.floating,
@@ -152,7 +152,7 @@ class _AuthScreenState extends State<AuthScreen> {
         brightness: Brightness.light,
         scaffoldBackgroundColor: Colors.white,
         primaryColor: _primaryColor,
-        textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
+        textTheme: ThemeData.light().textTheme.apply(fontFamily: '.SF Pro Display'),
       ),
       child: Scaffold(
         body: SafeArea(
@@ -205,7 +205,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         const SizedBox(height: 20),
                         Text(
                           'Let\'s Get Started',
-                          style: GoogleFonts.inter(
+                          style: TextStyle(fontFamily: '.SF Pro Display', 
                             fontSize: 32,
                             fontWeight: FontWeight.w800,
                             color: Colors.black,
@@ -215,7 +215,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Join the Brotherhood today',
-                          style: GoogleFonts.inter(fontSize: 16, color: Colors.black38),
+                          style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, color: Colors.black38),
                         ),
                       ],
                     ),
@@ -284,13 +284,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                   child: RichText(
                                     text: TextSpan(
                                       children: [
-                                        TextSpan(text: 'I agree with ', style: GoogleFonts.inter(fontSize: 14, color: Colors.black87)),
-                                        TextSpan(text: 'terms of use', style: GoogleFonts.inter(fontSize: 14, color: _primaryColor, fontWeight: FontWeight.bold)),
+                                        TextSpan(text: 'I agree with ', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black87)),
+                                        TextSpan(text: 'terms of use', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: _primaryColor, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                   ),
                                 )
-                              : Text('Remember me next time', style: GoogleFonts.inter(fontSize: 14, color: Colors.black87)),
+                              : Text('Remember me next time', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black87)),
                           ),
                         ],
                       ),
@@ -310,7 +310,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           child: _isLoading 
                             ? const CircularProgressIndicator(color: Colors.white)
-                            : Text(_isSignUp ? 'Sign up' : 'Sign in', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w800)),
+                            : Text(_isSignUp ? 'Sign up' : 'Sign in', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 18, fontWeight: FontWeight.w800)),
                         ),
                       ),
 
@@ -319,10 +319,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(_isSignUp ? 'Already have an account? ' : 'New to BRO? ', style: GoogleFonts.inter(color: Colors.black38)),
+                            Text(_isSignUp ? 'Already have an account? ' : 'New to BRO? ', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black38)),
                             GestureDetector(
                               onTap: () => setState(() => _isSignUp = !_isSignUp),
-                              child: Text(_isSignUp ? 'Sign in' : 'Create account', style: GoogleFonts.inter(color: _primaryColor, fontWeight: FontWeight.bold)),
+                              child: Text(_isSignUp ? 'Sign in' : 'Create account', style: TextStyle(fontFamily: '.SF Pro Display', color: _primaryColor, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -342,14 +342,14 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget _buildLabel(String label) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(label, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+      child: Text(label, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
     );
   }
 
   InputDecoration _inputDecoration(String hint, {bool isPassword = false, VoidCallback? onToggleVisibility, bool isPasswordVisible = false}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.inter(color: Colors.black12),
+      hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black12),
       filled: true,
       fillColor: Colors.grey.withOpacity(0.04),
       enabledBorder: OutlineInputBorder(

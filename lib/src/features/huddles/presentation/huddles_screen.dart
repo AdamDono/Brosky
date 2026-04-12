@@ -102,7 +102,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
               decoration: BoxDecoration(color: isSelected ? _teal : Colors.transparent, borderRadius: BorderRadius.circular(16), border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 1.5)),
-              child: Text(vibe == 'ALL' ? 'ALL' : '#$vibe', style: GoogleFonts.inter(color: isSelected ? Colors.white : const Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+              child: Text(vibe == 'ALL' ? 'ALL' : '#$vibe', style: TextStyle(fontFamily: '.SF Pro Display', color: isSelected ? Colors.white : const Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
             ),
           );
         },
@@ -115,7 +115,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       width: double.infinity,
       decoration: BoxDecoration(color: const Color(0xFFF8FAFC), border: Border(top: BorderSide(color: Colors.black.withOpacity(0.02), width: 1))),
-      child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedChampion, color: Colors.black26, size: 14), const SizedBox(width: 8), Text('GLOBAL BROHOOD STREAM', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5))]),
+      child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedChampion, color: Colors.black26, size: 14), const SizedBox(width: 8), Text('GLOBAL BROHOOD STREAM', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5))]),
     );
   }
 
@@ -141,7 +141,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 56, height: 56, decoration: BoxDecoration(color: _teal.withOpacity(0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: _teal.withOpacity(0.1), width: 1)), child: Center(child: Text(name.substring(0, 1).toUpperCase(), style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.w900, color: _teal)))),
+                  Container(width: 56, height: 56, decoration: BoxDecoration(color: _teal.withOpacity(0.08), borderRadius: BorderRadius.circular(16), border: Border.all(color: _teal.withOpacity(0.1), width: 1)), child: Center(child: Text(name.substring(0, 1).toUpperCase(), style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, fontWeight: FontWeight.w700, color: _teal)))),
                   const SizedBox(width: 20),
                   Expanded(
                     child: Column(
@@ -150,11 +150,11 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 17, color: const Color(0xFF1E293B))),
+                            Text(name, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF1E293B))),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(color: isPublic ? _teal.withOpacity(0.1) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(6)),
-                              child: Text(isPublic ? 'OPEN' : 'RESTRICTED', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: isPublic ? _teal : Colors.black38, letterSpacing: 0.5)),
+                              child: Text(isPublic ? 'OPEN' : 'RESTRICTED', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 9, fontWeight: FontWeight.w700, color: isPublic ? _teal : Colors.black38, letterSpacing: 0.3)),
                             ),
                           ],
                         ),
@@ -165,14 +165,14 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(color: _teal.withOpacity(0.06), borderRadius: BorderRadius.circular(6), border: Border.all(color: _teal.withOpacity(0.12), width: 1)),
-                              child: Row(mainAxisSize: MainAxisSize.min, children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: Color(0xFF14B8A6), size: 10), const SizedBox(width: 4), Text('$mutualCount BROS IN SQUAD', style: GoogleFonts.inter(color: _teal, fontWeight: FontWeight.w900, fontSize: 9, letterSpacing: 0.5))]),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: Color(0xFF14B8A6), size: 10), const SizedBox(width: 4), Text('$mutualCount BROS IN SQUAD', style: TextStyle(fontFamily: '.SF Pro Display', color: _teal, fontWeight: FontWeight.w700, fontSize: 9, letterSpacing: 0.3))]),
                             ),
                           ),
-                        Text(bio, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 14, color: const Color(0xFF64748B), height: 1.5)),
+                        Text(bio, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: const Color(0xFF64748B), height: 1.4)),
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.black.withOpacity(0.03), borderRadius: BorderRadius.circular(10)), child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: Color(0xFF64748B), size: 14), const SizedBox(width: 6), Text('$memberCount TOTAL', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w900, color: const Color(0xFF64748B), letterSpacing: 0.5))])),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.black.withOpacity(0.03), borderRadius: BorderRadius.circular(10)), child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: Color(0xFF64748B), size: 14), const SizedBox(width: 6), Text('$memberCount TOTAL', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF64748B), letterSpacing: 0.3))])),
                             const Spacer(),
                             GestureDetector(
                                 onTap: () {
@@ -209,7 +209,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                                             : hasPendingRequest
                                                 ? 'REQUESTED'
                                                 : 'REQUEST', 
-                                        style: GoogleFonts.inter(
+                                        style: TextStyle(fontFamily: '.SF Pro Display', 
                                           color: (isPublic || isJoined)
                                               ? const Color(0xFF1E293B)
                                               : hasPendingRequest
@@ -279,6 +279,6 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
     } catch (e) { return 0; }
   }
 
-  Widget _buildLoadingState() { return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(color: _teal, strokeWidth: 2), const SizedBox(height: 24), Text('INITIALIZING BROHOOD...', style: GoogleFonts.poppins(color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))])); }
-  Widget _buildEmptyState() { return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, size: 64, color: Color(0xFFF1F5F9)), const SizedBox(height: 16), Text('No Huddles found in this vibe.', style: GoogleFonts.inter(color: Colors.black26, fontSize: 14, fontWeight: FontWeight.w600))])); }
+  Widget _buildLoadingState() { return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(color: _teal, strokeWidth: 2), const SizedBox(height: 24), Text('INITIALIZING BROHOOD...', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))])); }
+  Widget _buildEmptyState() { return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, size: 64, color: Color(0xFFF1F5F9)), const SizedBox(height: 16), Text('No Huddles found in this vibe.', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26, fontSize: 14, fontWeight: FontWeight.w600))])); }
 }

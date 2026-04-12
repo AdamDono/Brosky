@@ -102,7 +102,7 @@ class _BroPostCardState extends State<BroPostCard> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        title: Text('DELETE POST?', style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 16)),
+        title: Text('DELETE POST?', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 16)),
         content: const Text('This action is permanent. Ready to drop it?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('KEEP IT', style: TextStyle(color: Colors.black26))),
@@ -165,10 +165,10 @@ class _BroPostCardState extends State<BroPostCard> {
                           children: [
                             GestureDetector(
                                onTap: _navigateToDetail,
-                               child: Text(username, style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B)))
+                               child: Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B)))
                             ),
                             const SizedBox(width: 6),
-                            Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
+                            Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
                             const Spacer(),
                             IconButton(
                               onPressed: () {
@@ -219,7 +219,7 @@ class _BroPostCardState extends State<BroPostCard> {
                             children: [
                               Text(
                                 widget.post['content'] ?? '', 
-                                style: GoogleFonts.inter(fontSize: 15, height: 1.5, color: const Color(0xFF1E293B), fontWeight: FontWeight.w400)
+                                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: const Color(0xFF1E293B), fontWeight: FontWeight.w400)
                               ),
                               const SizedBox(height: 12),
                               if (widget.post['image_url'] != null)
@@ -252,7 +252,7 @@ class _BroPostCardState extends State<BroPostCard> {
                                 children: [
                                   const HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: Color(0xFF64748B), size: 18),
                                   const SizedBox(width: 8),
-                                  Text('$_commentCount', style: GoogleFonts.inter(color: const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                                  Text('$_commentCount', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),
@@ -267,7 +267,7 @@ class _BroPostCardState extends State<BroPostCard> {
                                     size: 18
                                   ),
                                   const SizedBox(width: 8),
-                                  Text('$_totalReactions', style: GoogleFonts.inter(color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                                  Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
                                 ],
                               ),
                             ),

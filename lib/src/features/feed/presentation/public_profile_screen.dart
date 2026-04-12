@@ -159,7 +159,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final isMe = widget.userId == Supabase.instance.client.auth.currentUser?.id;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -172,7 +172,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && _optimisticConversation == null) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
+            return const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
           }
 
           if (snapshot.hasError || (!snapshot.hasData && _optimisticConversation == null)) {
@@ -212,15 +212,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       Center(
                         child: CircleAvatar(
                           radius: 54,
-                          backgroundColor: const Color(0xFF2DD4BF),
+                          backgroundColor: Colors.white10,
                           backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                          child: avatarUrl == null ? const Icon(Icons.person, size: 60, color: Colors.black) : null,
+                          child: avatarUrl == null ? const Icon(Icons.person_rounded, size: 60, color: Colors.white24) : null,
                         ),
                       ),
                       const SizedBox(height: 20),
                       Text(
                         username,
-                        style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(height: 16),
                       
@@ -243,8 +243,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           _buildActionButton(
                             context, 
                             'CONNECT', 
-                            Icons.handshake_outlined, 
-                            const Color(0xFF2DD4BF), 
+                            Icons.handshake_rounded, 
+                            Colors.white, 
                             Colors.black,
                             () => _handleConnection(context, profile, conversation)
                           )
@@ -254,16 +254,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF2DD4BF).withOpacity(0.2),
+                                  color: Colors.white.withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFF2DD4BF), width: 1),
+                                  border: Border.all(color: Colors.white24, width: 1),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.check_circle, color: Color(0xFF2DD4BF), size: 14),
+                                    const Icon(Icons.verified_rounded, color: Colors.white, size: 14),
                                     const SizedBox(width: 6),
-                                    Text('WE BROS', style: GoogleFonts.outfit(color: const Color(0xFF2DD4BF), fontWeight: FontWeight.bold, fontSize: 12)),
+                                    Text('CONNECTED BROS', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
                                   ],
                                 ),
                               ),
@@ -311,8 +311,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 _buildActionButton(
                                   context, 
                                   'ACCEPT', 
-                                  Icons.check, 
-                                  const Color(0xFF2DD4BF), 
+                                  Icons.check_rounded, 
+                                  Colors.white, 
                                   Colors.black,
                                   () async {
                                     try {
@@ -359,18 +359,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           spacing: 8,
                           runSpacing: 8,
                           alignment: WrapAlignment.center,
-                          children: vibes.map((vibe) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2DD4BF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF2DD4BF).withOpacity(0.3), width: 1),
-                            ),
-                            child: Text(
-                              vibe,
-                              style: const TextStyle(color: Color(0xFF2DD4BF), fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                          )).toList(),
+                            children: vibes.map((vibe) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white10, width: 1),
+                              ),
+                              child: Text(
+                                vibe.toUpperCase(),
+                                style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                              ),
+                            )).toList(),
                         ),
                       const SizedBox(height: 24),
                       Container(
@@ -385,17 +385,17 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           children: [
                             Text(
                               'ABOUT BRO',
-                              style: GoogleFonts.outfit(
+                              style: TextStyle(fontFamily: '.SF Pro Display', 
                                 fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2DD4BF),
-                                letterSpacing: 1.5,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white54,
+                                letterSpacing: 2,
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               bio,
-                              style: GoogleFonts.outfit(fontSize: 15, color: Colors.white.withOpacity(0.85), height: 1.5),
+                              style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, color: Colors.white, height: 1.6),
                             ),
                           ],
                         ),
@@ -403,11 +403,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       const SizedBox(height: 32),
                       Row(
                         children: [
-                          const Icon(Icons.history, color: Color(0xFF2DD4BF), size: 18),
+                          const Icon(Icons.history_rounded, color: Colors.white30, size: 18),
                           const SizedBox(width: 8),
                           Text(
                             'RECENT POSTS',
-                            style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.2),
+                            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white24, letterSpacing: 2),
                           ),
                         ],
                       ),
@@ -452,7 +452,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _buildStatColumn(String value, String label) {
     return Column(
       children: [
-        Text(value, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(value, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.white38)),
       ],
@@ -466,7 +466,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 18),
-        label: Text(label, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13)),
+        label: Text(label, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold, fontSize: 13)),
         style: ElevatedButton.styleFrom(
           backgroundColor: bgColor,
           foregroundColor: fgColor,

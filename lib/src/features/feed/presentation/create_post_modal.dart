@@ -101,7 +101,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
             children: [
               Text(
                 isEdit ? 'EDIT POST' : 'NEW POST', 
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 2, color: Colors.black26)
+                style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 2, color: Colors.black26)
               ),
               IconButton(onPressed: () => Navigator.pop(context), icon: const HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.black12, size: 22)),
             ],
@@ -111,10 +111,10 @@ class _CreatePostModalState extends State<CreatePostModal> {
             controller: _contentController,
             maxLines: 5,
             autofocus: true,
-            style: GoogleFonts.inter(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
+            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, color: Colors.black, fontWeight: FontWeight.w500),
             decoration: InputDecoration(
               hintText: "What's the word, Bro?",
-              hintStyle: GoogleFonts.inter(color: Colors.black12, fontSize: 16, fontWeight: FontWeight.w600),
+              hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black12, fontSize: 16, fontWeight: FontWeight.w600),
               border: InputBorder.none,
             ),
           ),
@@ -167,7 +167,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
                 ),
                 child: _isPosting 
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(isEdit ? 'UPDATE' : 'POST', style: GoogleFonts.inter(fontWeight: FontWeight.w900, letterSpacing: 1)),
+                  : Text(isEdit ? 'UPDATE' : 'POST', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, letterSpacing: 1)),
               ),
             ],
           ),

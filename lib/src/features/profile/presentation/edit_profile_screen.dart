@@ -132,7 +132,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Profile Updated, Bro! 🤝'),
-            backgroundColor: Color(0xFF2DD4BF),
+            backgroundColor: Color(0xFFFFFFFF),
           ),
         );
       }
@@ -150,11 +150,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF000000),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Edit Profile', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text('Edit Profile', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold)),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
@@ -165,8 +165,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onPressed: _saveProfile,
               child: Text(
                 'Save',
-                style: GoogleFonts.outfit(
-                  color: const Color(0xFF2DD4BF),
+                style: TextStyle(fontFamily: '.SF Pro Display', 
+                  color: const Color(0xFFFFFFFF),
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -188,7 +188,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF2DD4BF), width: 2),
+                      border: Border.all(color: const Color(0xFFFFFFFF), width: 2),
                       image: _imageFile != null
                           ? DecorationImage(
                               image: kIsWeb
@@ -215,7 +215,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: const BoxDecoration(
-                          color: Color(0xFF2DD4BF),
+                          color: Color(0xFFFFFFFF),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.camera_alt, size: 20, color: Colors.black),
@@ -229,7 +229,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Center(
               child: Text(
                 'OR CHOOSE A BRO PORTRAIT',
-                style: GoogleFonts.outfit(
+                style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: Colors.white38,
@@ -261,7 +261,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF2DD4BF) : Colors.white10,
+                          color: isSelected ? const Color(0xFFFFFFFF) : Colors.white10,
                           width: 2,
                         ),
                         image: DecorationImage(
@@ -316,17 +316,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF2DD4BF).withOpacity(0.1)
+                          ? const Color(0xFFFFFFFF).withOpacity(0.1)
                           : Colors.white.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF2DD4BF) : Colors.transparent,
+                        color: isSelected ? const Color(0xFFFFFFFF) : Colors.transparent,
                       ),
                     ),
                     child: Text(
                       vibe,
-                      style: GoogleFonts.outfit(
-                        color: isSelected ? const Color(0xFF2DD4BF) : Colors.white60,
+                      style: TextStyle(fontFamily: '.SF Pro Display', 
+                        color: isSelected ? const Color(0xFFFFFFFF) : Colors.white60,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
@@ -338,7 +338,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.only(top: 40),
-                child: Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF))),
+                child: Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF))),
               ),
           ],
         ),
@@ -351,7 +351,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         label.toUpperCase(),
-        style: GoogleFonts.outfit(
+        style: TextStyle(fontFamily: '.SF Pro Display', 
           fontSize: 12,
           fontWeight: FontWeight.bold,
           color: Colors.white38,
@@ -369,7 +369,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      style: GoogleFonts.outfit(color: Colors.white),
+      style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white24),
@@ -380,7 +380,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           borderRadius: BorderRadius.circular(16),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Color(0xFF2DD4BF)),
+          borderSide: const BorderSide(color: Color(0xFFFFFFFF)),
           borderRadius: BorderRadius.circular(16),
         ),
         contentPadding: const EdgeInsets.all(20),

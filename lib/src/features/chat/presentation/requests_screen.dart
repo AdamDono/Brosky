@@ -54,9 +54,9 @@ class _RequestsScreenState extends State<RequestsScreen> {
     final myId = Supabase.instance.client.auth.currentUser!.id;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF000000),
       appBar: AppBar(
-        title: Text('Connection Requests', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text('Connection Requests', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
        leading: IconButton(
@@ -74,7 +74,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
             .neq('initiator_id', myId), // Show only incoming requests
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
+            return const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
           }
           
           final requests = snapshot.data ?? [];
@@ -88,7 +88,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                    const SizedBox(height: 16),
                    Text(
                      'No pending requests.',
-                     style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16),
+                     style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white38, fontSize: 16),
                    ),
                 ],
               ),
@@ -135,7 +135,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                             CircleAvatar(
                               radius: 24,
                               backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                              backgroundColor: const Color(0xFF2DD4BF),
+                              backgroundColor: const Color(0xFFFFFFFF),
                               child: avatarUrl == null ? const Icon(Icons.person, color: Colors.black) : null,
                             ),
                             const SizedBox(width: 16),
@@ -143,7 +143,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(username, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold, fontSize: 16)),
                                   const Text('Wants to connect', style: TextStyle(color: Colors.white38, fontSize: 12)),
                                 ],
                               ),
@@ -158,7 +158,7 @@ class _RequestsScreenState extends State<RequestsScreen> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.check, color: Color(0xFF2DD4BF)),
+                      icon: const Icon(Icons.check, color: Color(0xFFFFFFFF)),
                       onPressed: () => _respondToRequest(req['id'], true),
                     ),
                   ],
