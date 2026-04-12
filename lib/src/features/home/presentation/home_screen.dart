@@ -335,9 +335,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   }),
 
-                  const SizedBox(height: 8),
-                  Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Container(height: 1, color: Colors.black.withOpacity(0.05))),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
+
+                  _buildNotificationRow(),
 
                   _buildNavRow(
                     icon: HugeIcons.strokeRoundedUser,
@@ -345,8 +345,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     isSelected: false,
                     onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())); },
                   ),
-
-                  if (_pendingRequestCount > 0) ..._buildRequestsNavRow(),
                 ],
               ),
             ),
@@ -414,40 +412,55 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<Widget> _buildRequestsNavRow() {
-    return [
-      const SizedBox(height: 4),
-      GestureDetector(
-        onTap: () async {
-          Navigator.pop(context);
-          await Navigator.push(context, MaterialPageRoute(builder: (_) => const SquadRequestsScreen()));
-          _loadPendingRequests();
-        },
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-          decoration: BoxDecoration(
-            color: _primaryColor.withOpacity(0.04),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _primaryColor.withOpacity(0.1), width: 1),
-          ),
-          child: Row(
-            children: [
-              HugeIcon(icon: HugeIcons.strokeRoundedNotification01, color: _primaryColor, size: 19),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text('Squad Requests', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: _primaryColor)),
+  Widget _buildNotificationRow() {
+    final hasNotifications = _pendingRequestCount > 0;
+    
+    return GestureDetector(
+      onTap: () async {
+        Navigator.pop(context);
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => const SquadRequestsScreen()));
+        _loadPendingRequests();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: hasNotifications ? _primaryColor.withOpacity(0.06) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            HugeIcon(
+              icon: HugeIcons.strokeRoundedNotification01, 
+              color: hasNotifications ? _primaryColor : const Color(0xFF94A3B8), 
+              size: 19,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Notifications', 
+                style: GoogleFonts.inter(
+                  fontSize: 15, 
+                  fontWeight: hasNotifications ? FontWeight.w700 : FontWeight.w500, 
+                  color: hasNotifications ? _primaryColor : const Color(0xFF334155),
+                ),
               ),
+            ),
+            if (hasNotifications)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(color: _primaryColor, borderRadius: BorderRadius.circular(20)),
+                decoration: BoxDecoration(
+                  color: _primaryColor, 
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))],
+                ),
                 child: Text('$_pendingRequestCount', style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
               ),
-            ],
-          ),
+          ],
         ),
       ),
-    ];
+    );
   }
 }
