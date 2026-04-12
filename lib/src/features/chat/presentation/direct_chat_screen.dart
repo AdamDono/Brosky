@@ -64,21 +64,29 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     if (user == null) return const Scaffold(body: Center(child: Text('Not authenticated')));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20), onPressed: () => Navigator.pop(context)),
+        shape: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF1E293B)), onPressed: () => Navigator.pop(context)),
         title: Row(
           children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFF2DD4BF),
-              backgroundImage: widget.partnerAvatar != null ? NetworkImage(widget.partnerAvatar!) : null,
-              child: widget.partnerAvatar == null ? const Icon(Icons.person, color: Colors.black, size: 20) : null,
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFF1F5F9),
+                border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
+                image: widget.partnerAvatar != null ? DecorationImage(image: NetworkImage(widget.partnerAvatar!), fit: BoxFit.cover) : null,
+              ),
+              child: widget.partnerAvatar == null ? const Icon(Icons.person, color: Colors.black26, size: 18) : null,
             ),
             const SizedBox(width: 12),
-            Text(widget.partnerUsername, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(
+              widget.partnerUsername, 
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF1E293B)),
+            ),
           ],
         ),
       ),
@@ -88,7 +96,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: Supabase.instance.client.from('direct_messages').stream(primaryKey: ['id']).order('created_at', ascending: true),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6)));
                 final messages = snapshot.data!.where((msg) {
                   return (msg['sender_id'] == user.id && msg['receiver_id'] == widget.partnerId) || (msg['sender_id'] == widget.partnerId && msg['receiver_id'] == user.id);
                 }).toList();
@@ -116,21 +124,37 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
 
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe) {
     final createdAt = DateTime.parse(message['created_at']);
+    const _primaryColor = Color(0xFF14B8A6);
+    
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFF2DD4BF) : const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(16).copyWith(bottomRight: isMe ? Radius.zero : const Radius.circular(16), bottomLeft: isMe ? const Radius.circular(16) : Radius.zero),
+          color: isMe ? _primaryColor : Colors.white,
+          border: isMe ? null : Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(20),
+            topRight: const Radius.circular(20),
+            bottomLeft: Radius.circular(isMe ? 20 : 4),
+            bottomRight: Radius.circular(isMe ? 4 : 20),
+          ),
+          boxShadow: isMe ? [BoxShadow(color: _primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))] : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5, offset: const Offset(0, 2))],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Text(message['content'] ?? '', style: GoogleFonts.outfit(color: isMe ? Colors.black : Colors.white, fontSize: 15)),
-            const SizedBox(height: 4),
-            Text(timeago.format(createdAt), style: TextStyle(color: isMe ? Colors.black54 : Colors.white38, fontSize: 10)),
+            Text(
+              message['content'] ?? '', 
+              style: GoogleFonts.inter(color: isMe ? Colors.white : const Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              timeago.format(createdAt), 
+              style: GoogleFonts.inter(color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),
@@ -138,15 +162,55 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   }
 
   Widget _buildMessageInput() {
+    const _primaryColor = Color(0xFF14B8A6);
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 12),
-      decoration: const BoxDecoration(color: Color(0xFF1E293B), border: Border(top: BorderSide(color: Colors.white10))),
-      child: Row(
-        children: [
-          Expanded(child: TextField(controller: _messageController, style: const TextStyle(color: Colors.white), decoration: InputDecoration(hintText: 'Type a message...', hintStyle: const TextStyle(color: Colors.white24), filled: true, fillColor: const Color(0xFF0F172A), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none)))),
-          const SizedBox(width: 8),
-          IconButton(onPressed: _isSending ? null : _sendMessage, icon: const Icon(Icons.send_rounded, color: Color(0xFF2DD4BF))),
-        ],
+      decoration: BoxDecoration(
+        color: Colors.white, 
+        border: Border(top: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, -4))],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _messageController, 
+                style: GoogleFonts.inter(color: const Color(0xFF1E293B), fontSize: 15), 
+                maxLines: null,
+                keyboardType: TextInputType.multiline,
+                decoration: InputDecoration(
+                  hintText: 'Message...', 
+                  hintStyle: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 15), 
+                  filled: true, 
+                  fillColor: const Color(0xFFF1F5F9), 
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), 
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none)
+                )
+              ),
+            ),
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: _isSending ? null : _sendMessage,
+              child: Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: _primaryColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Center(
+                  child: _isSending 
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 24),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
