@@ -17,14 +17,16 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return const Center(child: Text('Please login'));
 
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: Supabase.instance.client
-          .from('direct_messages')
-          .stream(primaryKey: ['id'])
-          .order('created_at', ascending: false),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF2DD4BF)));
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: Supabase.instance.client
+            .from('direct_messages')
+            .stream(primaryKey: ['id'])
+            .order('created_at', ascending: false),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6)));
 
         final allMessages = snapshot.data!;
         final messages = allMessages.where((m) => m['sender_id'] == user.id || m['receiver_id'] == user.id).toList();
@@ -48,27 +50,29 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
 
         if (conversations.isEmpty) return _buildEmptyState();
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: conversations.length,
-          itemBuilder: (context, index) {
-            final convo = conversations[index];
-            return FutureBuilder<Map<String, dynamic>>(
-              future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', convo['partner_id']).single(),
-              builder: (context, profSnap) {
-                final profile = profSnap.data;
-                return _buildConversationCard({
-                  ...convo,
-                  'partner_username': profile?['username'] ?? 'Bro',
-                  'partner_avatar': profile?['avatar_url'],
-                  'last_message': convo['content'],
-                  'last_message_time': convo['created_at'],
-                });
-              },
-            );
-          },
-        );
-      },
+          return ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: conversations.length,
+            separatorBuilder: (context, index) => Divider(height: 1, color: Colors.black.withOpacity(0.04), indent: 76),
+            itemBuilder: (context, index) {
+              final convo = conversations[index];
+              return FutureBuilder<Map<String, dynamic>>(
+                future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', convo['partner_id']).single(),
+                builder: (context, profSnap) {
+                  final profile = profSnap.data;
+                  return _buildConversationCard({
+                    ...convo,
+                    'partner_username': profile?['username'] ?? 'Bro',
+                    'partner_avatar': profile?['avatar_url'],
+                    'last_message': convo['content'],
+                    'last_message_time': convo['created_at'],
+                  });
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -77,12 +81,18 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.chat_bubble_outline, size: 64, color: Colors.white10),
+          const Icon(Icons.chat_bubble_outline, size: 56, color: Color(0xFFE2E8F0)),
           const SizedBox(height: 16),
           Text(
-            'No conversations yet, Bro.\nStart chatting from a profile!',
+            'No conversations yet, Bro.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(color: Colors.white38, fontSize: 16),
+            style: GoogleFonts.poppins(color: const Color(0xFF1E293B), fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Start a direct chat from a profile.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 14),
           ),
         ],
       ),
@@ -92,62 +102,67 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
   Widget _buildConversationCard(Map<String, dynamic> convo) {
     final lastMessageTime = DateTime.parse(convo['last_message_time']);
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        leading: CircleAvatar(
-          radius: 28,
-          backgroundColor: const Color(0xFF2DD4BF),
-          backgroundImage: convo['partner_avatar'] != null 
-              ? NetworkImage(convo['partner_avatar']) 
-              : null,
-          child: convo['partner_avatar'] == null 
-              ? const Icon(Icons.person, color: Colors.black) 
-              : null,
-        ),
-        title: Text(
-          convo['partner_username'],
-          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              convo['last_message'] ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white60,
-                fontSize: 13,
-                fontStyle: convo['is_from_me'] ? FontStyle.italic : FontStyle.normal,
-              ),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (ctx) => DirectChatScreen(
+              partnerId: convo['partner_id'],
+              partnerUsername: convo['partner_username'],
+              partnerAvatar: convo['partner_avatar'],
             ),
-            const SizedBox(height: 4),
-            Text(
-              timeago.format(lastMessageTime),
-              style: const TextStyle(color: Colors.white24, fontSize: 11),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 52, height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFF8FAFC),
+                border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
+                image: convo['partner_avatar'] != null ? DecorationImage(image: NetworkImage(convo['partner_avatar']), fit: BoxFit.cover) : null,
+              ),
+              child: convo['partner_avatar'] == null ? const Icon(Icons.person, color: Colors.black26, size: 24) : null,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        convo['partner_username'],
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: const Color(0xFF1E293B), fontSize: 16),
+                      ),
+                      Text(
+                        timeago.format(lastMessageTime, locale: 'en_short'),
+                        style: GoogleFonts.inter(color: const Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    convo['last_message'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: convo['is_from_me'] ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      fontSize: 14,
+                      fontWeight: convo['is_from_me'] ? FontWeight.w400 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        trailing: const Icon(Icons.chevron_right, color: Colors.white24),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (ctx) => DirectChatScreen(
-                partnerId: convo['partner_id'],
-                partnerUsername: convo['partner_username'],
-                partnerAvatar: convo['partner_avatar'],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
