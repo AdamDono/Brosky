@@ -40,11 +40,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     try {
+      final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3)).toIso8601String();
+      
       final unreadDMs = await Supabase.instance.client
           .from('direct_messages')
           .select('id')
           .eq('receiver_id', user.id)
-          .eq('is_read', false);
+          .eq('is_read', false)
+          .gt('created_at', threeDaysAgo);
           
       final unreadRequests = await Supabase.instance.client
           .from('conversations')
@@ -263,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             BottomNavigationBarItem(
               icon: Badge(
-                isLabelVisible: _unreadMessagesCount > 0,
+                isLabelVisible: _unreadMessagesCount > 0 && _currentIndex != 3,
                 label: Text('$_unreadMessagesCount', style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.redAccent,
                 offset: const Offset(5, -5),

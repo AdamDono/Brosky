@@ -385,18 +385,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFFFFFFFF).withOpacity(0.1)
-                          : Colors.white.withOpacity(0.05),
+                          ? const Color(0xFF14B8A6)
+                          : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFFFFFFFF) : Colors.transparent,
+                        color: isSelected ? const Color(0xFF14B8A6) : const Color(0xFFE2E8F0),
                       ),
                     ),
                     child: Text(
                       vibe,
                       style: TextStyle(fontFamily: '.SF Pro Display', 
-                        color: isSelected ? const Color(0xFFFFFFFF) : Colors.white60,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? const Color(0xFFFFFFFF) : const Color(0xFF64748B),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                       ),
                     ),
                   ),
