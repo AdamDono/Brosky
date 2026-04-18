@@ -241,7 +241,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
+          onTap: (index) {
+            setState(() => _currentIndex = index);
+            _loadUnreadBadges();
+          },
           backgroundColor: Colors.white,
           selectedItemColor: _primaryColor,
           unselectedItemColor: const Color(0xFF94A3B8),
