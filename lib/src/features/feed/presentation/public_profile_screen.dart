@@ -254,25 +254,25 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final isMe = widget.userId == Supabase.instance.client.auth.currentUser?.id;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF1E293B), size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: isMe ? [] : [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 22),
-            color: const Color(0xFF1E293B),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF1E293B), size: 22),
+            color: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             onSelected: (value) {
               if (value == 'report') _reportUser();
               if (value == 'block') _blockUser();
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, color: Colors.white70, size: 18), SizedBox(width: 10), Text('Report User', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600))])),
+              const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, color: Color(0xFF64748B), size: 18), SizedBox(width: 10), Text('Report User', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF1E293B), fontSize: 14, fontWeight: FontWeight.w600))])),
               const PopupMenuItem(value: 'block', child: Row(children: [Icon(Icons.block_rounded, color: Colors.redAccent, size: 18), SizedBox(width: 10), Text('Block User', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.w600))])),
             ],
           ),
@@ -322,15 +322,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       Center(
                         child: CircleAvatar(
                           radius: 54,
-                          backgroundColor: Colors.white10,
+                          backgroundColor: const Color(0xFFE2E8F0),
                           backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                          child: avatarUrl == null ? const Icon(Icons.person_rounded, size: 60, color: Colors.white24) : null,
+                          child: avatarUrl == null ? const Icon(Icons.person_rounded, size: 60, color: Color(0xFF94A3B8)) : null,
                         ),
                       ),
                       const SizedBox(height: 20),
                       Text(
                         username,
-                        style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                       ),
                       const SizedBox(height: 16),
                       
@@ -354,8 +354,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             context, 
                             'CONNECT', 
                             Icons.handshake_rounded, 
-                            Colors.white, 
-                            Colors.black,
+                            const Color(0xFF14B8A6), 
+                            Colors.white,
                             () => _handleConnection(context, profile, conversation)
                           )
                         else if (conversation['status'] == 'accepted')
@@ -364,16 +364,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.white24, width: 1),
+                                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
                                 ),
-                                child: Row(
+                                child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.verified_rounded, color: Colors.white, size: 14),
-                                    const SizedBox(width: 6),
-                                    Text('CONNECTED BROS', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
+                                    Icon(Icons.verified_rounded, color: Color(0xFF14B8A6), size: 14),
+                                    SizedBox(width: 6),
+                                    Text('CONNECTED BROS', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF14B8A6), fontWeight: FontWeight.w900, fontSize: 10, letterSpacing: 1.2)),
                                   ],
                                 ),
                               ),
@@ -382,8 +382,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 context, 
                                 'MESSAGE', 
                                 Icons.chat_bubble_outline, 
-                                Colors.white, 
-                                Colors.black,
+                                const Color(0xFF1E293B), 
+                                Colors.white,
                                 () => _handleConnection(context, profile, conversation)
                               ),
                             ],
@@ -394,8 +394,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               context, 
                               'REQUEST SENT', 
                               Icons.check, 
-                              Colors.white10, 
-                              Colors.white54,
+                              const Color(0xFFF1F5F9), 
+                              const Color(0xFF94A3B8),
                               null // Disabled
                             )
                           else
@@ -406,7 +406,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                   context, 
                                   'DECLINE', 
                                   Icons.close, 
-                                  Colors.redAccent.withOpacity(0.2), 
+                                  const Color(0xFFFEE2E2), 
                                   Colors.redAccent,
                                   () async {
                                     await Supabase.instance.client.from('conversations').delete().eq('id', conversation['id']);
@@ -422,8 +422,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                   context, 
                                   'ACCEPT', 
                                   Icons.check_rounded, 
-                                  Colors.white, 
-                                  Colors.black,
+                                  const Color(0xFF14B8A6), 
+                                  Colors.white,
                                   () async {
                                     try {
                                       final currentConv = conversation;
@@ -472,13 +472,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             children: vibes.map((vibe) => Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
+                                color: const Color(0xFFF1F5F9),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white10, width: 1),
+                                border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
                               ),
                               child: Text(
                                 vibe.toUpperCase(),
-                                style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                               ),
                             )).toList(),
                         ),
@@ -487,37 +487,38 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1E293B),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               'ABOUT BRO',
                               style: TextStyle(fontFamily: '.SF Pro Display', 
                                 fontSize: 10,
                                 fontWeight: FontWeight.w900,
-                                color: Colors.white54,
+                                color: Color(0xFF94A3B8),
                                 letterSpacing: 2,
                               ),
                             ),
                             const SizedBox(height: 12),
                             Text(
                               bio,
-                              style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, color: Colors.white, height: 1.6),
+                              style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, color: Color(0xFF334155), height: 1.6),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 32),
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(Icons.history_rounded, color: Colors.white30, size: 18),
-                          const SizedBox(width: 8),
+                          Icon(Icons.history_rounded, color: Color(0xFF94A3B8), size: 18),
+                          SizedBox(width: 8),
                           Text(
                             'RECENT POSTS',
-                            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white24, letterSpacing: 2),
+                            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 2),
                           ),
                         ],
                       ),
@@ -562,9 +563,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _buildStatColumn(String value, String label) {
     return Column(
       children: [
-        Text(value, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(value, style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.white38)),
+        Text(label, style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, color: Color(0xFF64748B))),
       ],
     );
   }
@@ -582,8 +583,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           foregroundColor: fgColor,
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          disabledBackgroundColor: Colors.white12,
-          disabledForegroundColor: Colors.white38,
+          disabledBackgroundColor: const Color(0xFFF1F5F9),
+          disabledForegroundColor: const Color(0xFF94A3B8),
         ),
       ),
     );
