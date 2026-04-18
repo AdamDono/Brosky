@@ -25,6 +25,25 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   bool _isSending = false;
 
   @override
+  void initState() {
+    super.initState();
+    _markMessagesAsRead();
+  }
+
+  Future<void> _markMessagesAsRead() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      await Supabase.instance.client
+          .from('direct_messages')
+          .update({'is_read': true})
+          .eq('receiver_id', user.id)
+          .eq('sender_id', widget.partnerId)
+          .eq('is_read', false);
+    } catch (_) {}
+  }
+
+  @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();

@@ -117,6 +117,7 @@ CREATE TABLE IF NOT EXISTS public.direct_messages (
   sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   receiver_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -252,3 +253,25 @@ CREATE POLICY "Users can view their own blocks." ON public.user_blocks
 
 CREATE POLICY "Users can unblock." ON public.user_blocks
   FOR DELETE USING (auth.uid() = blocker_id);
+
+-- 19. RPC Function for User Account Deletion (Apple Compliance)
+-- This function allows an authenticated user to delete their own account.
+-- It works by securely calling auth.uid() and deleting the user from auth.users.
+-- Due to ON DELETE CASCADE on public.profiles, all their posts, messages, and huddle data will vanish.
+CREATE OR REPLACE FUNCTION delete_user_account()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER -- Runs with elevated privileges to access auth.users
+AS $$
+BEGIN
+  -- Ensure a user is actually logged in
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  -- Delete from auth.users. The foreign key constraint on public.profiles 
+  -- will automatically cascade and delete everything relating to this user.
+  DELETE FROM auth.users WHERE id = auth.uid();
+END;
+$$;
+

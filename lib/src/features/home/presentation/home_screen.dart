@@ -23,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color _primaryColor = const Color(0xFF14B8A6);
   int _pendingRequestCount = 0;
+  int _unreadMessagesCount = 0;
   Map<String, dynamic>? _myProfile;
   int _broCount = 0;
   int _huddleCount = 0;
@@ -31,7 +32,33 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadPendingRequests();
+    _loadUnreadBadges();
     _loadProfile();
+  }
+
+  Future<void> _loadUnreadBadges() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final unreadDMs = await Supabase.instance.client
+          .from('direct_messages')
+          .select('id')
+          .eq('receiver_id', user.id)
+          .eq('is_read', false);
+          
+      final unreadRequests = await Supabase.instance.client
+          .from('conversations')
+          .select('id')
+          .eq('status', 'pending')
+          .neq('initiator_id', user.id)
+          .or('user1_id.eq.${user.id},user2_id.eq.${user.id}');
+
+      if (mounted) {
+        setState(() {
+          _unreadMessagesCount = (unreadDMs as List).length + (unreadRequests as List).length;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadProfile() async {
@@ -235,7 +262,13 @@ class _HomeScreenState extends State<HomeScreen> {
               label: 'BROHOOD',
             ),
             BottomNavigationBarItem(
-              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: _currentIndex == 3 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+              icon: Badge(
+                isLabelVisible: _unreadMessagesCount > 0,
+                label: Text('$_unreadMessagesCount', style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: Colors.redAccent,
+                offset: const Offset(5, -5),
+                child: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: _currentIndex == 3 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+              ),
               label: 'MESSAGES',
             ),
           ],
