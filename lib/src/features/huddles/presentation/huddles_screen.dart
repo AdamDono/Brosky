@@ -97,7 +97,16 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                         if (targetList.isEmpty) {
                            return Center(child: Padding(
                              padding: const EdgeInsets.all(40.0),
-                             child: Text(_showJoined ? 'You have not joined any squads yet.' : 'No new squads to discover.', textAlign: TextAlign.center, style: const TextStyle(fontFamily: '.SF Pro Display', color: Colors.black38, fontWeight: FontWeight.w500, fontSize: 13)),
+                             child: Column(
+                               mainAxisAlignment: MainAxisAlignment.center,
+                               children: [
+                                 HugeIcon(icon: _showJoined ? HugeIcons.strokeRoundedUserGroup : HugeIcons.strokeRoundedGlobe02, size: 48, color: const Color(0xFFCBD5E1)),
+                                 const SizedBox(height: 16),
+                                 Text(_showJoined ? 'You haven\'t joined any squads yet.' : 'No new squads to discover.', textAlign: TextAlign.center, style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontWeight: FontWeight.w700, fontSize: 16)),
+                                 const SizedBox(height: 8),
+                                 Text(_showJoined ? 'Explore the Discover tab to find your tribe.' : 'Check back later or adjust your vibes.', textAlign: TextAlign.center, style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontWeight: FontWeight.w500, fontSize: 14)),
+                               ],
+                             ),
                            ));
                         }
 
@@ -346,5 +355,18 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
   }
 
   Widget _buildLoadingState() { return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [CircularProgressIndicator(color: _teal, strokeWidth: 2), const SizedBox(height: 24), Text('INITIALIZING BROHOOD...', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))])); }
-  Widget _buildEmptyState() { return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, size: 64, color: Color(0xFFF1F5F9)), const SizedBox(height: 16), Text('No Huddles found in this vibe.', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26, fontSize: 14, fontWeight: FontWeight.w600))])); }
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, size: 48, color: Color(0xFFCBD5E1)),
+          const SizedBox(height: 16),
+          const Text('No squads found here.', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 16, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          const Text('Try switching vibes to discover more.', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500))
+        ]
+      )
+    );
+  }
 }

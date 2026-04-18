@@ -132,7 +132,18 @@ class _FeedScreenState extends State<FeedScreen> {
               }
               
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(child: Text('The barbershop is empty, Bro.', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26)));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const HugeIcon(icon: HugeIcons.strokeRoundedMessageMultiple01, size: 48, color: Color(0xFFCBD5E1)),
+                      const SizedBox(height: 16),
+                      const Text('No posts yet, Bro.', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 16, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      const Text('Be the first to speak up in the barbershop.', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                );
               }
 
               // --- SURGICAL FILTERING (24H + SEARCH + VIBE) ---
@@ -153,12 +164,23 @@ class _FeedScreenState extends State<FeedScreen> {
                 return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(40.0),
-                    child: Text(
-                      _selectedVibe == 'ALL' 
-                        ? 'The stream has evaporated. Start a new one.' 
-                        : 'No posts found in #$_selectedVibe', 
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black38, fontWeight: FontWeight.w500, fontSize: 13)
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const HugeIcon(icon: HugeIcons.strokeRoundedSearch01, size: 48, color: Color(0xFFCBD5E1)),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchController.text.isNotEmpty 
+                            ? 'No posts found for "${_searchController.text}"'
+                            : _selectedVibe == 'ALL' 
+                              ? 'Nothing to see here right now.' 
+                              : 'No posts yet in #$_selectedVibe', 
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontWeight: FontWeight.w700, fontSize: 16)
+                        ),
+                        const SizedBox(height: 8),
+                        const Text('Try adjusting your search or switching vibes.', textAlign: TextAlign.center, style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
+                      ],
                     ),
                   )
                 );
