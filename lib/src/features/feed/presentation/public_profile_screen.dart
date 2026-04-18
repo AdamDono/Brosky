@@ -154,6 +154,101 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     });
   }
 
+  Future<void> _reportUser() async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        String selectedReason = 'Inappropriate behavior';
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E293B),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Report User', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Why are you reporting this user?', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white60, fontSize: 14)),
+              const SizedBox(height: 16),
+              ...['Inappropriate behavior', 'Spam or fake account', 'Harassment', 'Other'].map((r) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(r, style: const TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontSize: 14)),
+                leading: const Icon(Icons.radio_button_unchecked, color: Colors.white24, size: 20),
+                onTap: () => Navigator.pop(ctx, r),
+              )),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (reason != null && mounted) {
+      try {
+        final myId = Supabase.instance.client.auth.currentUser!.id;
+        await Supabase.instance.client.from('user_reports').insert({
+          'reporter_id': myId,
+          'reported_user_id': widget.userId,
+          'reason': reason,
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Report submitted. We will review this promptly.', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w600, color: Colors.white)),
+              backgroundColor: const Color(0xFF14B8A6),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(20),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error submitting report: $e')));
+        }
+      }
+    }
+  }
+
+  Future<void> _blockUser() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Block User', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18)),
+        content: const Text('This user will no longer be able to see your profile, posts, or message you. Are you sure?', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white60, fontSize: 14, height: 1.5)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white54))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Block', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontWeight: FontWeight.w700))),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        final myId = Supabase.instance.client.auth.currentUser!.id;
+        await Supabase.instance.client.from('user_blocks').insert({
+          'blocker_id': myId,
+          'blocked_user_id': widget.userId,
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('User blocked successfully.', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w600, color: Colors.white)),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              margin: const EdgeInsets.all(20),
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error blocking user: $e')));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMe = widget.userId == Supabase.instance.client.auth.currentUser?.id;
@@ -167,6 +262,21 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: isMe ? [] : [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 22),
+            color: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onSelected: (value) {
+              if (value == 'report') _reportUser();
+              if (value == 'block') _blockUser();
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(value: 'report', child: Row(children: [Icon(Icons.flag_outlined, color: Colors.white70, size: 18), SizedBox(width: 10), Text('Report User', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600))])),
+              const PopupMenuItem(value: 'block', child: Row(children: [Icon(Icons.block_rounded, color: Colors.redAccent, size: 18), SizedBox(width: 10), Text('Block User', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.w600))])),
+            ],
+          ),
+        ],
       ),
       body: FutureBuilder<List<dynamic>>(
         future: _profileFuture,

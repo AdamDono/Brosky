@@ -1,4 +1,5 @@
 import 'package:bro_app/src/features/auth/presentation/terms_screen.dart';
+import 'package:bro_app/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:flutter/material.dart';
@@ -296,6 +297,17 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
 
                       const SizedBox(height: 40),
+
+                      if (!_isSignUp) ...[
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordScreen())),
+                            child: Text('Forgot Password?', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, fontWeight: FontWeight.w600, color: _primaryColor)),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
 
                       SizedBox(
                         width: double.infinity,

@@ -1,6 +1,5 @@
 import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -12,6 +11,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<String> selectedVibes = [];
+  final Color _teal = const Color(0xFF14B8A6);
   
   final List<Map<String, dynamic>> vibes = [
     {'name': 'Sports & Fitness', 'icon': Icons.fitness_center},
@@ -39,8 +39,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving vibes: $error'),
+            content: Text('Error saving vibes: $error', style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w600, color: Colors.white)),
             backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(20),
           ),
         );
       }
@@ -50,29 +53,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 28.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 48),
-              Text(
+              const Text(
                 'Pick Your Vibes',
                 style: TextStyle(fontFamily: '.SF Pro Display', 
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1E293B),
+                  letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
+              const SizedBox(height: 10),
+              const Text(
                 'What do you want to talk about today?\nSelect at least 2.',
                 style: TextStyle(fontFamily: '.SF Pro Display', 
-                  fontSize: 16,
-                  color: Colors.white60,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF94A3B8),
+                  height: 1.5,
                 ),
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 40),
               Expanded(
                 child: GridView.builder(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -99,14 +107,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         duration: const Duration(milliseconds: 200),
                         decoration: BoxDecoration(
                           color: isSelected 
-                            ? const Color(0xFFFFFFFF).withOpacity(0.1)
-                            : const Color(0xFF1E293B),
-                          borderRadius: BorderRadius.circular(24),
+                            ? _teal.withOpacity(0.06)
+                            : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected 
-                              ? const Color(0xFFFFFFFF) 
-                              : Colors.transparent,
-                            width: 2,
+                              ? _teal 
+                              : const Color(0xFFF1F5F9),
+                            width: isSelected ? 2 : 1.5,
                           ),
                         ),
                         child: Column(
@@ -114,20 +122,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           children: [
                             Icon(
                               vibe['icon'],
-                              size: 40,
+                              size: 36,
                               color: isSelected 
-                                ? const Color(0xFFFFFFFF) 
-                                : Colors.white70,
+                                ? _teal 
+                                : const Color(0xFF94A3B8),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 14),
                             Text(
                               vibe['name'],
                               textAlign: TextAlign.center,
                               style: TextStyle(fontFamily: '.SF Pro Display', 
-                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
                                 color: isSelected 
-                                  ? const Color(0xFFFFFFFF) 
-                                  : Colors.white,
+                                  ? const Color(0xFF1E293B) 
+                                  : const Color(0xFF64748B),
                               ),
                             ),
                           ],
@@ -141,22 +150,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 padding: const EdgeInsets.only(bottom: 32.0),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 60,
+                  height: 56,
                   child: ElevatedButton(
                     onPressed: selectedVibes.length >= 2 ? _saveVibes : null,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFFFFF),
-                      foregroundColor: Colors.black,
+                      backgroundColor: _teal,
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      disabledBackgroundColor: Colors.white10,
+                      disabledBackgroundColor: const Color(0xFFF1F5F9),
+                      disabledForegroundColor: const Color(0xFF94A3B8),
+                      elevation: 0,
                     ),
-                    child: Text(
-                      'Let\'s Go',
+                    child: const Text(
+                      'Continue',
                       style: TextStyle(fontFamily: '.SF Pro Display', 
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),

@@ -1,8 +1,10 @@
 import 'package:bro_app/src/features/profile/presentation/edit_profile_screen.dart';
 import 'package:bro_app/src/features/auth/presentation/auth_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -91,6 +93,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SnackBar(
             content: Text('Error signing out: $error'),
             backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showPremiumSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 24),
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(color: const Color(0xFF14B8A6).withOpacity(0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.workspace_premium, color: Color(0xFF14B8A6), size: 32),
+            ),
+            const SizedBox(height: 20),
+            const Text('Bro Premium', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+            const SizedBox(height: 12),
+            const Text(
+              'Unlock exclusive features, priority matching, and unlimited Huddle access. Coming soon.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF64748B), height: 1.6),
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity, height: 52,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF14B8A6), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+                child: const Text('Notify Me', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _inviteFriends() {
+    const inviteText = 'Join me on Brosky — the app for real ones. Build your squad, find your tribe. Download now! 🔥👊';
+    Clipboard.setData(const ClipboardData(text: inviteText));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Invite link copied! Share it with your Bros. 🔥', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w600, color: Colors.white)),
+        backgroundColor: const Color(0xFF14B8A6),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(20),
+      ),
+    );
+  }
+
+  Future<void> _openSupport() async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'support@brosky.app',
+      queryParameters: {'subject': 'Help & Support - Brosky App'},
+    );
+    try {
+      await launchUrl(emailUri);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Email support@brosky.app for help.', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w600, color: Colors.white)),
+            backgroundColor: const Color(0xFF14B8A6),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(20),
           ),
         );
       }
@@ -232,10 +312,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
   
               // Settings / Menu Items
-              _buildMenuItem(Icons.workspace_premium, 'Bro Premium', badge: true),
-              _buildMenuItem(Icons.history, 'Huddle History'),
-              _buildMenuItem(Icons.share, 'Invite Friends'),
-              _buildMenuItem(Icons.help_outline, 'Help & Support'),
+              _buildMenuItem(Icons.workspace_premium, 'Bro Premium', badge: true, onTap: () => _showPremiumSheet()),
+              _buildMenuItem(Icons.share, 'Invite Friends', onTap: () => _inviteFriends()),
+              _buildMenuItem(Icons.help_outline, 'Help & Support', onTap: () => _openSupport()),
               
               const SizedBox(height: 24),
               TextButton(
@@ -277,8 +356,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, {bool badge = false}) {
+  Widget _buildMenuItem(IconData icon, String title, {bool badge = false, VoidCallback? onTap}) {
     return ListTile(
+      onTap: onTap,
       contentPadding: EdgeInsets.zero,
       leading: Container(
         padding: const EdgeInsets.all(8),

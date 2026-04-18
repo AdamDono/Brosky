@@ -30,6 +30,7 @@ dependencies:
   geolocator: ^11.0.0
   zego_uikit_prebuilt_call: ^4.15.5
   shared_preferences: ^2.2.2
+  url_launcher: ^6.2.4
 
 dev_dependencies:
   flutter_test:

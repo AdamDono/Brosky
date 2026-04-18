@@ -214,3 +214,41 @@ CREATE POLICY "Users can join huddles." ON public.huddle_members FOR INSERT WITH
 -- Policies for Messages
 CREATE POLICY "Messages are viewable by everyone." ON public.huddle_messages FOR SELECT USING (true);
 CREATE POLICY "Users can send messages to huddles." ON public.huddle_messages FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- 17. User Reports Table (Safety & Moderation)
+CREATE TABLE IF NOT EXISTS public.user_reports (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  reporter_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  reported_user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT DEFAULT 'pending', -- 'pending', 'reviewed', 'resolved'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.user_reports ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can create reports." ON public.user_reports
+  FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+
+CREATE POLICY "Users can view their own reports." ON public.user_reports
+  FOR SELECT USING (auth.uid() = reporter_id);
+
+-- 18. User Blocks Table (Safety & Moderation)
+CREATE TABLE IF NOT EXISTS public.user_blocks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  blocker_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  blocked_user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(blocker_id, blocked_user_id)
+);
+
+ALTER TABLE public.user_blocks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can block others." ON public.user_blocks
+  FOR INSERT WITH CHECK (auth.uid() = blocker_id);
+
+CREATE POLICY "Users can view their own blocks." ON public.user_blocks
+  FOR SELECT USING (auth.uid() = blocker_id);
+
+CREATE POLICY "Users can unblock." ON public.user_blocks
+  FOR DELETE USING (auth.uid() = blocker_id);
