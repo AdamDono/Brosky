@@ -23,6 +23,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
   bool _rememberMe = false;
   bool _agreeTerms = false;
+  bool _confirmMale = false;
   bool _obscurePassword = true;
 
   final Color _primaryColor = const Color(0xFF14B8A6); // Clean Premium Teal
@@ -79,6 +80,10 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       if (!_agreeTerms) {
         _showError('You must agree to the Brotherhood Pact to join.');
+        return;
+      }
+      if (!_confirmMale) {
+        _showError('This app is an exclusive space for men. You must confirm your identity.');
         return;
       }
     }
@@ -262,37 +267,62 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      Row(
+                      Column(
                         children: [
-                          SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: Checkbox(
-                              value: _isSignUp ? _agreeTerms : _rememberMe,
-                              onChanged: (val) => setState(() {
-                                if (_isSignUp) _agreeTerms = val!;
-                                else _rememberMe = val!;
-                              }),
-                              activeColor: _primaryColor,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                            ),
+                          Row(
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Checkbox(
+                                  value: _isSignUp ? _agreeTerms : _rememberMe,
+                                  onChanged: (val) => setState(() {
+                                    if (_isSignUp) _agreeTerms = val!;
+                                    else _rememberMe = val!;
+                                  }),
+                                  activeColor: _primaryColor,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _isSignUp 
+                                  ? GestureDetector(
+                                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsScreen())),
+                                      child: RichText(
+                                        text: TextSpan(
+                                          children: [
+                                            const TextSpan(text: 'I agree with ', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black87)),
+                                            TextSpan(text: 'terms of use', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: _primaryColor, fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  : const Text('Remember me next time', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black87)),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _isSignUp 
-                              ? GestureDetector(
-                                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const TermsScreen())),
-                                  child: RichText(
-                                    text: TextSpan(
-                                      children: [
-                                        TextSpan(text: 'I agree with ', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black87)),
-                                        TextSpan(text: 'terms of use', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: _primaryColor, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
+                          if (_isSignUp) ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: Checkbox(
+                                    value: _confirmMale,
+                                    onChanged: (val) => setState(() => _confirmMale = val!),
+                                    activeColor: _primaryColor,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                   ),
-                                )
-                              : Text('Remember me next time', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black87)),
-                          ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text('I confirm I identify as male and agree to the Brohood Code of Conduct.', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: Colors.black87)),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
 
