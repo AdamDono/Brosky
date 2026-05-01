@@ -39,6 +39,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     'https://api.dicebear.com/7.x/avataaars/png?seed=Bro6&backgroundColor=2dd4bf',
   ];
 
+
   @override
   void initState() {
     super.initState();
@@ -330,7 +331,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? const Color(0xFFFFFFFF) : Colors.white10,
+                          color: isSelected ? const Color(0xFF14B8A6) : Colors.transparent,
                           width: 2,
                         ),
                         image: DecorationImage(

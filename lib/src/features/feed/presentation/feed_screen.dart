@@ -14,8 +14,11 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   late Timer _refreshTimer;
   String _selectedVibe = 'ALL';
+  int _postLimit = 15; // Lazy Loading Limit
+  bool _isLoadingMore = false;
 
   final List<String> _vibes = ['ALL', 'STRATEGY', 'GAINS', 'HUSTLE', 'LIFESTYLE', 'VIBES'];
 
@@ -25,12 +28,28 @@ class _FeedScreenState extends State<FeedScreen> {
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
+    
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        if (!_isLoadingMore) {
+          setState(() {
+            _isLoadingMore = true;
+            _postLimit += 15;
+          });
+          // Small delay to prevent rapid-fire requests
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) setState(() => _isLoadingMore = false);
+          });
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
     _refreshTimer.cancel();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -125,7 +144,8 @@ class _FeedScreenState extends State<FeedScreen> {
             stream: Supabase.instance.client
                 .from('bro_posts')
                 .stream(primaryKey: ['id'])
-                .order('created_at', ascending: false),
+                .order('created_at', ascending: false)
+                .limit(_postLimit),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6), strokeWidth: 2));
@@ -187,9 +207,18 @@ class _FeedScreenState extends State<FeedScreen> {
               }
 
               return ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: validPosts.length,
-                itemBuilder: (context, index) => BroPostCard(post: validPosts[index]),
+                controller: _scrollController,
+                padding: const EdgeInsets.only(bottom: 20),
+                itemCount: validPosts.length + (_isLoadingMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == validPosts.length) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6), strokeWidth: 2)),
+                    );
+                  }
+                  return BroPostCard(post: validPosts[index]);
+                },
               );
             },
           ),
