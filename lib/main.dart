@@ -203,9 +203,21 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 letterSpacing: 1.2,
               ),
             ),
+            const Spacer(),
+            const Text(
+              'POWERED BY PACE TECH',
+              style: TextStyle(
+                fontFamily: '.SF Pro Display',
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 2,
+              ),
+            ),
+            const SizedBox(height: 48),
           ],
         ),
       ),
     );
-  }
+}
 }
