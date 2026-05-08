@@ -30,7 +30,7 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
   
   final List<dynamic> _tacticalIcons = [
     HugeIcons.strokeRoundedChampion,
-    HugeIcons.strokeRoundedWorkHistory,
+    HugeIcons.strokeRounded workHistory,
     HugeIcons.strokeRoundedFire,
     HugeIcons.strokeRoundedTarget02,
     HugeIcons.strokeRoundedCompass01,
@@ -151,7 +151,7 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
           const Divider(height: 32, thickness: 1, color: Color(0xFFF1F5F9)),
           Expanded(child: PageView(controller: _pageController, physics: const NeverScrollableScrollPhysics(), children: [_buildIdentityStep(), _buildPurposeStep(), _buildProtocolStep()])),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+            padding: EdgeInsets.fromLTRB(24, 12, 24, 32 + MediaQuery.of(context).padding.bottom),
             child: Row(
               children: [
                 if (_currentStep > 0) IconButton(onPressed: _prevStep, icon: const HugeIcon(icon: HugeIcons.strokeRoundedArrowLeft01, color: Colors.black26, size: 24)),

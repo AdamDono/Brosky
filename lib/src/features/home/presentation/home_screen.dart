@@ -234,54 +234,57 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const HugeIcon(icon: HugeIcons.strokeRoundedPlusSign, color: Colors.white, size: 24),
             ),
       bottomNavigationBar: Container(
-        height: 85,
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
         ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() => _currentIndex = index);
-            _loadUnreadBadges();
-          },
-          backgroundColor: Colors.white,
-          selectedItemColor: _primaryColor,
-          unselectedItemColor: const Color(0xFF94A3B8),
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
-          unselectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
-          items: [
-            BottomNavigationBarItem(
-              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedHome01, color: _currentIndex == 0 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
-              label: 'FEED',
-            ),
-            BottomNavigationBarItem(
-              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedRadar01, color: _currentIndex == 1 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
-              label: 'RADAR',
-            ),
-            BottomNavigationBarItem(
-              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: _currentIndex == 2 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
-              label: 'BROHOOD',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                isLabelVisible: _unreadMessagesCount > 0 && _currentIndex != 3,
-                label: Text('$_unreadMessagesCount', style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.bold)),
-                backgroundColor: Colors.redAccent,
-                offset: const Offset(5, -5),
-                child: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: _currentIndex == 3 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+        child: SafeArea(
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() => _currentIndex = index);
+              _loadUnreadBadges();
+            },
+            backgroundColor: Colors.white,
+            selectedItemColor: _primaryColor,
+            unselectedItemColor: const Color(0xFF94A3B8),
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            elevation: 0,
+            type: BottomNavigationBarType.fixed,
+            selectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+            unselectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
+            items: [
+              BottomNavigationBarItem(
+                icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedHome01, color: _currentIndex == 0 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+                label: 'FEED',
               ),
-              label: 'MESSAGES',
-            ),
-          ],
+              BottomNavigationBarItem(
+                icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedRadar01, color: _currentIndex == 1 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+                label: 'RADAR',
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: _currentIndex == 2 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+                label: 'BROHOOD',
+              ),
+              BottomNavigationBarItem(
+                icon: Badge(
+                  isLabelVisible: _unreadMessagesCount > 0 && _currentIndex != 3,
+                  label: Text('$_unreadMessagesCount', style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.bold)),
+                  backgroundColor: Colors.redAccent,
+                  offset: const Offset(5, -5),
+                  child: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: _currentIndex == 3 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+                ),
+                label: 'MESSAGES',
+              ),
+            ],
+          ),
         ),
       ),
     );
-  }  Widget _buildDrawer() {
+  }
+
+  Widget _buildDrawer() {
     final username = _myProfile?['username'] ?? 'Bro';
     final bio = _myProfile?['bio']?.toString().trim();
     final avatarUrl = _myProfile?['avatar_url'];
@@ -300,8 +303,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-
-            // ── PROFILE ────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
               child: Row(
@@ -346,8 +347,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
-            // Inline stats
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
               child: Text(
@@ -356,10 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w500),
               ),
             ),
-
             Container(height: 1, color: Colors.black.withOpacity(0.05)),
-
-            // ── NAVIGATION ─────────────────────────────────────────
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -373,11 +369,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () { setState(() => _currentIndex = idx); Navigator.pop(context); },
                     );
                   }),
-
                   const SizedBox(height: 4),
-
                   _buildNotificationRow(),
-
                   _buildNavRow(
                     icon: HugeIcons.strokeRoundedUser,
                     label: 'My Profile',
@@ -387,8 +380,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
-            // ── FOOTER ─────────────────────────────────────────────
             Container(height: 1, color: Colors.black.withOpacity(0.05)),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -403,7 +394,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
           ],
         ),
       ),
