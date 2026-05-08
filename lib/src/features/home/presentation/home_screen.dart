@@ -20,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  late final List<Widget> _screens; // Store screens persistently
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color _primaryColor = const Color(0xFF14B8A6);
   int _pendingRequestCount = 0;
@@ -31,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _screens = [
+      const FeedScreen(key: PageStorageKey('feed')),
+      const MatchScreen(key: PageStorageKey('match')),
+      const HuddlesScreen(key: PageStorageKey('huddles')),
+      const BroDirectScreen(key: PageStorageKey('messages')),
+    ];
     _loadPendingRequests();
     _loadUnreadBadges();
     _loadProfile();
@@ -131,13 +138,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> screens = [
-      const FeedScreen(),
-      const MatchScreen(), // Radar
-      const HuddlesScreen(), // Community
-      const BroDirectScreen(), // Messages
-    ];
-
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white, // --- FLAT BOUTIQUE PURE WHITE ---
@@ -213,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: _buildDrawer(),
       body: IndexedStack(
         index: _currentIndex,
-        children: screens,
+        children: _screens,
       ),
       floatingActionButton: _currentIndex == 1 // No add on Radar
           ? null 

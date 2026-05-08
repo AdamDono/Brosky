@@ -1,7 +1,6 @@
-import 'dart:async';
 import 'package:bro_app/src/features/feed/presentation/widgets/bro_post_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hugeicons/hugeicons.dart';
 
@@ -12,34 +11,33 @@ class FeedScreen extends StatefulWidget {
   State<FeedScreen> createState() => _FeedScreenState();
 }
 
-class _FeedScreenState extends State<FeedScreen> {
+class _FeedScreenState extends State<FeedScreen>
+    with AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true;
+
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  late Timer _refreshTimer;
   String _selectedVibe = 'ALL';
-  int _postLimit = 15; // Lazy Loading Limit
+
+  List<Map<String, dynamic>> _allPosts = [];
+  List<Map<String, dynamic>> _displayPosts = [];
+  bool _isLoading = true;
   bool _isLoadingMore = false;
+  int _postLimit = 20;
 
   final List<String> _vibes = ['ALL', 'STRATEGY', 'GAINS', 'HUSTLE', 'LIFESTYLE', 'VIBES'];
 
   @override
   void initState() {
     super.initState();
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      if (mounted) setState(() {});
-    });
-    
+    _loadPosts();
+
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-        if (!_isLoadingMore) {
-          setState(() {
-            _isLoadingMore = true;
-            _postLimit += 15;
-          });
-          // Small delay to prevent rapid-fire requests
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) setState(() => _isLoadingMore = false);
-          });
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
+        if (!_isLoadingMore && !_isLoading) {
+          _loadMore();
         }
       }
     });
@@ -47,19 +45,82 @@ class _FeedScreenState extends State<FeedScreen> {
 
   @override
   void dispose() {
-    _refreshTimer.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _applyFilters() {
+    final cutOff = DateTime.now().subtract(const Duration(hours: 24));
+    final query = _searchController.text.toUpperCase();
+    
+    setState(() {
+      _displayPosts = _allPosts.where((post) {
+        final createdAt = DateTime.tryParse(post['created_at'] ?? '');
+        if (createdAt == null) return false;
+        
+        final content = (post['content'] ?? '').toString().toUpperCase();
+        final isWithin24h = createdAt.isAfter(cutOff);
+        final matchesSearch = query.isEmpty || content.contains(query);
+        final matchesVibe = _selectedVibe == 'ALL' || content.contains(_selectedVibe);
+        
+        return isWithin24h && matchesSearch && matchesVibe;
+      }).toList();
+    });
+  }
+
+  Future<void> _loadPosts({bool silent = false}) async {
+    if (!silent && mounted) setState(() => _isLoading = _allPosts.isEmpty);
+    try {
+      final res = await Supabase.instance.client
+          .from('bro_posts')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(_postLimit);
+          
+      if (mounted) {
+        _allPosts = List<Map<String, dynamic>>.from(res);
+        _applyFilters();
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoadingMore) return;
+    if (mounted) setState(() => _isLoadingMore = true);
+    try {
+      final from = _allPosts.length;
+      final to = from + 14; 
+      final res = await Supabase.instance.client
+          .from('bro_posts')
+          .select()
+          .order('created_at', ascending: false)
+          .range(from, to);
+          
+      if (mounted) {
+        _allPosts.addAll(List<Map<String, dynamic>>.from(res);
+        _applyFilters();
+        setState(() => _isLoadingMore = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    _postLimit = 20;
+    await _loadPosts(silent: true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cutOff = DateTime.now().subtract(const Duration(hours: 24));
+    super.build(context);
 
     return Column(
       children: [
-        // --- TACTICAL COMMAND CENTER ---
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -67,7 +128,6 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
           child: Column(
             children: [
-              // Search Bar
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Container(
@@ -79,12 +139,12 @@ class _FeedScreenState extends State<FeedScreen> {
                   child: TextField(
                     controller: _searchController,
                     textAlignVertical: TextAlignVertical.center,
-                    onChanged: (val) => setState(() {}),
-                    style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w500, color: const Color(0xFF1A1D21), fontSize: 14),
-                    decoration: InputDecoration(
+                    onChanged: (_) => _applyFilters(),
+                    style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w500, color: Color(0xFF1A1D21), fontSize: 14),
+                    decoration: const InputDecoration(
                       hintText: 'Search the Brohood',
-                      hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w400),
-                      prefixIcon: const Padding(
+                      hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w400),
+                      prefixIcon: Padding(
                         padding: EdgeInsets.symmetric(horizontal: 14),
                         child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, color: Color(0xFF64748B), size: 18),
                       ),
@@ -94,8 +154,6 @@ class _FeedScreenState extends State<FeedScreen> {
                   ),
                 ),
               ),
-              
-              // Tactical Vibe Selector
               SizedBox(
                 height: 50,
                 child: ListView.builder(
@@ -106,7 +164,12 @@ class _FeedScreenState extends State<FeedScreen> {
                     final vibe = _vibes[index];
                     final isSelected = _selectedVibe == vibe;
                     return GestureDetector(
-                      onTap: () => setState(() => _selectedVibe = vibe),
+                      onTap: () {
+                        if (_selectedVibe != vibe) {
+                          _selectedVibe = vibe;
+                          _applyFilters();
+                        }
+                      },
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 4),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -114,14 +177,12 @@ class _FeedScreenState extends State<FeedScreen> {
                         decoration: BoxDecoration(
                           color: isSelected ? const Color(0xFF14B8A6) : Colors.transparent,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF14B8A6) : const Color(0xFFF1F5F9),
-                            width: 1.5
-                          ),
+                          border: Border.all(color: isSelected ? const Color(0xFF14B8A6) : const Color(0xFFF1F5F9), width: 1.5),
                         ),
                         child: Text(
                           vibe == 'ALL' ? 'ALL' : '#$vibe',
-                          style: TextStyle(fontFamily: '.SF Pro Display', 
+                          style: TextStyle(
+                            fontFamily: '.SF Pro Display', 
                             color: isSelected ? Colors.white : const Color(0xFF64748B),
                             fontSize: 11,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
@@ -137,91 +198,54 @@ class _FeedScreenState extends State<FeedScreen> {
             ],
           ),
         ),
-
-        // --- EPHEMERAL STREAM ---
         Expanded(
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: Supabase.instance.client
-                .from('bro_posts')
-                .stream(primaryKey: ['id'])
-                .order('created_at', ascending: false)
-                .limit(_postLimit),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6), strokeWidth: 2));
-              }
-              
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const HugeIcon(icon: HugeIcons.strokeRoundedMessageMultiple01, size: 48, color: Color(0xFFCBD5E1)),
-                      const SizedBox(height: 16),
-                      const Text('No posts yet, Bro.', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 16, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 8),
-                      const Text('Be the first to speak up in the barbershop.', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                );
-              }
-
-              // --- SURGICAL FILTERING (24H + SEARCH + VIBE) ---
-              final allPosts = snapshot.data!;
-              final validPosts = allPosts.where((post) {
-                final createdAt = DateTime.parse(post['created_at']);
-                final content = (post['content'] ?? '').toString().toUpperCase();
-                final searchQuery = _searchController.text.toUpperCase();
-                
-                final isWithin24h = createdAt.isAfter(cutOff);
-                final matchesSearch = searchQuery.isEmpty || content.contains(searchQuery);
-                final matchesVibe = _selectedVibe == 'ALL' || content.contains(_selectedVibe);
-
-                return isWithin24h && matchesSearch && matchesVibe;
-              }).toList();
-
-              if (validPosts.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(40.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const HugeIcon(icon: HugeIcons.strokeRoundedSearch01, size: 48, color: Color(0xFFCBD5E1)),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchController.text.isNotEmpty 
-                            ? 'No posts found for "${_searchController.text}"'
-                            : _selectedVibe == 'ALL' 
-                              ? 'Nothing to see here right now.' 
-                              : 'No posts yet in #$_selectedVibe', 
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontWeight: FontWeight.w700, fontSize: 16)
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6), strokeWidth: 2))
+              : RefreshIndicator(
+                  color: const Color(0xFF14B8A6),
+                  onRefresh: _onRefresh,
+                  child: _displayPosts.isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.5,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const HugeIcon(icon: HugeIcons.strokeRoundedMessageMultiple01, size: 48, color: Color(0xFFCBD5E1)),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _searchController.text.isNotEmpty 
+                                          ? 'No posts for "${_searchController.text}"' 
+                                          : 'No posts yet, Bro.',
+                                      style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 16, fontWeight: FontWeight.w700)
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 20),
+                          itemCount: _displayPosts.length + (_isLoadingMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == _displayPosts.length) {
+                              return const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6), strokeWidth: 2)),
+                              );
+                            }
+                            return BroPostCard(
+                              key: ValueKey(_displayPosts[index]['id']),
+                              post: _displayPosts[index]
+                            );
+                          },
                         ),
-                        const SizedBox(height: 8),
-                        const Text('Try adjusting your search or switching vibes.', textAlign: TextAlign.center, style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                  )
-                );
-              }
-
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.only(bottom: 20),
-                itemCount: validPosts.length + (_isLoadingMore ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == validPosts.length) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6), strokeWidth: 2)),
-                    );
-                  }
-                  return BroPostCard(post: validPosts[index]);
-                },
-              );
-            },
-          ),
+                ),
         ),
       ],
     );

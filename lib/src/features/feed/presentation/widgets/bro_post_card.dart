@@ -20,12 +20,22 @@ class _BroPostCardState extends State<BroPostCard> {
   int _commentCount = 0;
   String? _myReaction;
   int _totalReactions = 0;
+  Map<String, dynamic>? _profileData;
   final Color _teal = const Color(0xFF14B8A6);
 
   @override
   void initState() {
     super.initState();
     _fetchStats();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    final userId = widget.post['user_id'];
+    try {
+      final profile = await Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single();
+      if (mounted) setState(() => _profileData = profile);
+    } catch (_) {}
   }
 
   Future<void> _fetchStats() async {
@@ -125,166 +135,170 @@ class _BroPostCardState extends State<BroPostCard> {
     final createdAt = DateTime.parse(widget.post['created_at']);
     final isMyPost = userId == Supabase.instance.client.auth.currentUser?.id;
 
-    return FutureBuilder<Map<String, dynamic>>(
-      future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single(),
-      builder: (context, snapshot) {
-        final profile = snapshot.data;
-        final username = profile?['username'] ?? 'Bro';
-        final avatarUrl = profile?['avatar_url'];
+    final profile = _profileData;
+    final username = profile?['username'] ?? 'Bro';
+    final avatarUrl = profile?['avatar_url'];
 
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- LATERAL LEFT: PROFILE IMAGE ---
-                  GestureDetector(
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: userId))),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFFF1F5F9),
-                        image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
-                      ),
-                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 24) : null,
-                    ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- LATERAL LEFT: PROFILE IMAGE ---
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: userId))),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFF1F5F9),
+                    image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
                   ),
-                  const SizedBox(width: 12),
-                  
-                  // --- LATERAL RIGHT: CONTENT COLUMN ---
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 24) : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              
+              // --- LATERAL RIGHT: CONTENT COLUMN ---
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header: Name + Handle/Time + More
+                    Row(
                       children: [
-                        // Header: Name + Handle/Time + More
-                        Row(
-                          children: [
-                            GestureDetector(
-                               onTap: _navigateToDetail,
-                               child: Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B)))
-                            ),
-                            const SizedBox(width: 6),
-                            Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
-                            const Spacer(),
-                            IconButton(
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (ctx) => Container(
-                                    decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
-                                    padding: const EdgeInsets.all(24),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (isMyPost) ...[
-                                          ListTile(
-                                            leading: const HugeIcon(icon: HugeIcons.strokeRoundedEdit01, color: Colors.black54),
-                                            title: const Text('Edit Post'),
-                                            onTap: () { Navigator.pop(ctx); _handleEdit(); },
-                                          ),
-                                          ListTile(
-                                            leading: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.redAccent),
-                                            title: const Text('Delete Post', style: TextStyle(color: Colors.redAccent)),
-                                            onTap: () { Navigator.pop(ctx); _handleDelete(); },
-                                          ),
-                                        ],
-                                        ListTile(
-                                          leading: const HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: Colors.black54),
-                                          title: const Text('Report Post'),
-                                          onTap: () => Navigator.pop(ctx),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                              icon: const HugeIcon(icon: HugeIcons.strokeRoundedMoreHorizontal, color: Color(0xFF94A3B8), size: 20),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        
-                        // Content Text + Image (Wrapped in Nav Bridge)
                         GestureDetector(
-                          onTap: _navigateToDetail,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.post['content'] ?? '', 
-                                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: const Color(0xFF1E293B), fontWeight: FontWeight.w400)
-                              ),
-                              const SizedBox(height: 12),
-                              if (widget.post['image_url'] != null)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Image.network(
-                                    widget.post['image_url'],
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(height: 200, color: const Color(0xFFF8FAFC), child: const Center(child: CircularProgressIndicator(strokeWidth: 2)));
-                                    },
-                                  ),
-                                ),
-                            ],
-                          ),
+                           onTap: _navigateToDetail,
+                           child: Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B)))
                         ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Action Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Comment (Wired to Nav)
-                            GestureDetector(
-                              onTap: _navigateToDetail,
-                              child: Row(
-                                children: [
-                                  const HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: Color(0xFF64748B), size: 18),
-                                  const SizedBox(width: 8),
-                                  Text('$_commentCount', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
-                                ],
+                        const SizedBox(width: 6),
+                        Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
+                        const Spacer(),
+                        IconButton(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              backgroundColor: Colors.transparent,
+                              builder: (ctx) => Container(
+                                decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+                                padding: const EdgeInsets.all(24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (isMyPost) ...[
+                                      ListTile(
+                                        leading: const HugeIcon(icon: HugeIcons.strokeRoundedEdit01, color: Colors.black54),
+                                        title: const Text('Edit Post'),
+                                        onTap: () { Navigator.pop(ctx); _handleEdit(); },
+                                      ),
+                                      ListTile(
+                                        leading: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.redAccent),
+                                        title: const Text('Delete Post', style: TextStyle(color: Colors.redAccent)),
+                                        onTap: () { Navigator.pop(ctx); _handleDelete(); },
+                                      ),
+                                    ],
+                                    ListTile(
+                                      leading: const HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: Colors.black54),
+                                      title: const Text('Report Post'),
+                                      onTap: () => Navigator.pop(ctx),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            // Like
-                            GestureDetector(
-                              onTap: _handleReaction,
-                              child: Row(
-                                children: [
-                                  HugeIcon(
-                                    icon: HugeIcons.strokeRoundedFavourite, 
-                                    color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), 
-                                    size: 18
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            const SizedBox(width: 20),
-                          ],
+                            );
+                          },
+                          icon: const HugeIcon(icon: HugeIcons.strokeRoundedMoreHorizontal, color: Color(0xFF94A3B8), size: 20),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    
+                    // Content Text + Image (Wrapped in Nav Bridge)
+                    GestureDetector(
+                      onTap: _navigateToDetail,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.post['content'] ?? '', 
+                            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: const Color(0xFF1E293B), fontWeight: FontWeight.w400)
+                          ),
+                          const SizedBox(height: 12),
+                          if (widget.post['image_url'] != null)
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 400),
+                              width: double.infinity,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: AspectRatio(
+                                  aspectRatio: 16 / 9, 
+                                  child: Image.network(
+                                    widget.post['image_url'],
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        color: const Color(0xFFF8FAFC),
+                                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Action Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Comment (Wired to Nav)
+                        GestureDetector(
+                          onTap: _navigateToDetail,
+                          child: Row(
+                            children: [
+                              const HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: Color(0xFF64748B), size: 18),
+                              const SizedBox(width: 8),
+                              Text('$_commentCount', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                        // Like
+                        GestureDetector(
+                          onTap: _handleReaction,
+                          child: Row(
+                            children: [
+                              HugeIcon(
+                                icon: HugeIcons.strokeRoundedFavourite, 
+                                color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), 
+                                size: 18
+                              ),
+                              const SizedBox(width: 8),
+                              Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        const SizedBox(width: 20),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)), 
-          ],
-        );
-      }
+            ],
+          ),
+        ),
+        const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)), 
+      ],
     );
   }
 }

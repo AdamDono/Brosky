@@ -15,16 +15,12 @@ class PublicProfileScreen extends StatefulWidget {
 }
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
-  // We can keep _handleConnection here or specific button logic. 
-  // Let's copy _handleConnection inside.
-
   Future<void> _handleConnection(BuildContext context, Map<String, dynamic> userProfile, Map<String, dynamic>? currentConversation) async {
     final myId = Supabase.instance.client.auth.currentUser!.id;
     final otherId = userProfile['id'];
 
     if (myId == otherId) return;
 
-    // Check if we are already connected (accepted) -> Go to Messages
     final status = currentConversation?['status'] ?? _optimisticConversation?['status'];
     if (status == 'accepted') {
       if (!mounted) return;
@@ -41,7 +37,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       return;
     }
 
-    // Otherwise, it's a Connect request -> Insert into conversations
     try {
       final newConversation = {
         'user1_id': myId,
@@ -72,42 +67,28 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   late Future<List<dynamic>> _profileFuture;
   Map<String, dynamic>? _optimisticConversation;
   RealtimeChannel? _subscription;
-  Timer? _pollingTimer;
+  late Stream<List<Map<String, dynamic>>> _postStream; // Persistent post stream
 
   @override
   void initState() {
     super.initState();
     _profileFuture = _loadProfileData();
+    _initPostStream();
     _subscribeToChanges();
-    _startPolling();
+  }
+
+  void _initPostStream() {
+    _postStream = Supabase.instance.client
+        .from('bro_posts')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', widget.userId)
+        .order('created_at', ascending: false);
   }
 
   @override
   void dispose() {
-    _pollingTimer?.cancel();
     if (_subscription != null) Supabase.instance.client.removeChannel(_subscription!);
     super.dispose();
-  }
-
-  void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      if (!mounted) return;
-      try {
-        final newData = await _loadProfileData();
-        if (mounted) {
-          setState(() {
-            _profileFuture = Future.value(newData);
-            // If data shows accepted, clear optimistic state
-            final conversation = newData[4] as Map<String, dynamic>?;
-            if (conversation != null && conversation['status'] == 'accepted') {
-              _optimisticConversation = null; 
-            }
-          });
-        }
-      } catch (e) {
-        // silent
-      }
-    });
   }
 
   void _subscribeToChanges() {
@@ -128,12 +109,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     }
   }
 
-  // ... (maintain _loadProfileData as is or if needed copy it, but since I'm only targeting the class start and build, I'll assume usage of existing method)
   Future<List<dynamic>> _loadProfileData() async {
     final myId = Supabase.instance.client.auth.currentUser!.id;
     return Future.wait([
       Supabase.instance.client.from('profiles').select().eq('id', widget.userId).single(),
-      // Use count() which returns int
       Supabase.instance.client
           .from('conversations')
           .count(CountOption.exact)
@@ -142,7 +121,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       Supabase.instance.client.from('huddle_members').select('id').eq('user_id', widget.userId),
       Supabase.instance.client.from('bro_posts').select('id').eq('user_id', widget.userId),
       if (myId != widget.userId)
-        Supabase.instance.client.from('conversations').select().or('and(user1_id.eq.$myId,user2_id.eq.${widget.userId}),and(user1_id.eq.${widget.userId},user2_id.eq.$myId)').maybeSingle()
+        Supabase.instance.client.from('conversations').select().or('and(user1_id.eq.$myId,and(user1_id.eq.$myId,user2_id.eq.${widget.userId})),and(user1_id.eq.${widget.userId},user2_id.eq.$myId)').maybeSingle()
       else
         Future.value(null),
     ]);
@@ -158,7 +137,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final reason = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        String selectedReason = 'Inappropriate behavior';
         return AlertDialog(
           backgroundColor: const Color(0xFF1E293B),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -281,25 +259,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       body: FutureBuilder<List<dynamic>>(
         future: _profileFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && _optimisticConversation == null) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)));
+          if (snapshot.connectionState == ConnectionState.waiting && snapshot.data == null && _optimisticConversation == null) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6)));
           }
 
           if (snapshot.hasError || (!snapshot.hasData && _optimisticConversation == null)) {
             return const Center(child: Text("Bro not found."));
           }
 
-          // Use snapshot data if available, else usage of optimistic conversation implies we might be waiting for refresh
-          // But actually FutureBuilder keeps the last data if we don't return inside 'waiting'.
-          // However, we want to show the new status EVEN IF the snapshot is old or waiting.
-          
           final data = snapshot.hasData ? snapshot.data! : [];
           if (data.isEmpty && _optimisticConversation == null) return const SizedBox();
 
           final profile = data.isNotEmpty ? data[0] as Map<String, dynamic> : <String, dynamic>{};
-          // If we are refreshing, we might want to increment the connection count optimistically too?
-          // Let's rely on the server validation for the count, but immediate UI for buttons.
-          // Connections count is now an int directly (from count())
           final connections = data.isNotEmpty ? (data[1] is int ? data[1] as int : (data[1] as List).length) : 0;
           final huddles = (data.isNotEmpty ? (data[2] as List?)?.length : 0) ?? 0;
           final posts = (data.isNotEmpty ? (data[3] as List?)?.length : 0) ?? 0;
@@ -334,7 +305,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // --- Dynamic Stats ---
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -347,7 +317,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       ),
                       const SizedBox(height: 24),
                       
-                      // --- Smart Action Buttons ---
                       if (!isMe) ...[
                         if (conversation == null)
                           _buildActionButton(
@@ -396,7 +365,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               Icons.check, 
                               const Color(0xFFF1F5F9), 
                               const Color(0xFF94A3B8),
-                              null // Disabled
+                              null 
                             )
                           else
                             Row(
@@ -411,7 +380,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                   () async {
                                     await Supabase.instance.client.from('conversations').delete().eq('id', conversation['id']);
                                     setState(() {
-                                       _optimisticConversation = null; // Removed
+                                       _optimisticConversation = null; 
                                     });
                                     _refreshData();
                                   },
@@ -440,9 +409,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                           .eq('id', conversation['id'])
                                           .select();
                                       
-                                      debugPrint('Accept response: $response');
                                       if (response.isEmpty) {
-                                        throw 'Update failed. You might not have permission to update this conversation.';
+                                        throw 'Update failed.';
                                       }
                                             
                                       if (mounted) {
@@ -450,7 +418,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                         _refreshData();
                                       }
                                     } catch (e) {
-                                       debugPrint("Accept connection error: $e");
                                        if (mounted) {
                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                                          setState(() => _optimisticConversation = null);
@@ -523,20 +490,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // --- Real Stream of Posts ---
                       StreamBuilder<List<Map<String, dynamic>>>(
-                        stream: Supabase.instance.client
-                            .from('bro_posts')
-                            .stream(primaryKey: ['id'])
-                            .eq('user_id', widget.userId)
-                            .order('created_at', ascending: false),
+                        stream: _postStream, // Use persistent stream
                         builder: (ctx, postSnap) {
                           if (!postSnap.hasData) return const SizedBox();
                           final posts = postSnap.data!;
                           if (posts.isEmpty) {
                             return const Padding(
                               padding: EdgeInsets.symmetric(vertical: 40),
-                              child: Text("No posts yet. Silent but steady.", style: TextStyle(color: Colors.white24)),
+                              child: Text("No posts yet. Silent but steady.", style: TextStyle(color: Colors.black26)),
                             );
                           }
                           return ListView.builder(
