@@ -151,6 +151,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const Spacer(),
             // Premium Animated Geometric Logo
             ScaleTransition(
               scale: _scaleAnimation,
