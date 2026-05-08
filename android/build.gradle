@@ -1,3 +1,16 @@
+buildscript {
+    ext.kotlin_version = '1.9.22'
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 allprojects {
     repositories {
         google()
@@ -8,9 +21,27 @@ allprojects {
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(":app")
+    
+    // Polyfill 'flutter' for PLUGINS ONLY
+    if (project.name != "app") {
+        project.ext.flutter = [
+            compileSdkVersion: 36,
+            minSdkVersion: 22,
+            targetSdkVersion: 36,
+        ]
+    }
+}
+
+// FORCE JAVA 17 TOOLCHAIN
+subprojects {
+    project.plugins.withType(JavaPlugin).configureEach {
+        project.java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(17)
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
