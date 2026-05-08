@@ -79,10 +79,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   // --- THE HERO POST SECTION ---
                   _buildHeroPost(userId, createdAt),
                   
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
-                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, thickness: 1.5, color: Color(0xFFE2E8F0)),
+                  const SizedBox(height: 12),
 
                   // --- COMMENTS SECTION ---
                   StreamBuilder<List<Map<String, dynamic>>>(
@@ -99,7 +98,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: comments.length,
-                        separatorBuilder: (ctx, idx) => const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+                        separatorBuilder: (ctx, idx) => const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
                         itemBuilder: (context, index) => _buildCommentTile(comments[index]),
                       );
                     },

@@ -281,7 +281,7 @@ class _BroPostCardState extends State<BroPostCard> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)), 
+            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)), 
           ],
         );
       }
