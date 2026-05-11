@@ -54,32 +54,12 @@ class _HomeScreenState extends State<HomeScreen> {
         .eq('receiver_id', user.id)
         .listen((data) {
           final unreadDMs = data.where((m) => m['is_read'] == false).length;
-          _updateTotalBadgeCount(dmCount: unreadDMs);
+          if (mounted) {
+            setState(() {
+              _unreadMessagesCount = unreadDMs;
+            });
+          }
         });
-
-    // Listen for Conversation Requests (pending)
-    Supabase.instance.client
-        .from('conversations')
-        .stream(primaryKey: ['id'])
-        .or('user1_id.eq.${user.id},user2_id.eq.${user.id}')
-        .listen((data) {
-          final unreadReqs = data.where((c) => c['status'] == 'pending' && c['initiator_id'] != user.id).length;
-          _updateTotalBadgeCount(reqCount: unreadReqs);
-        });
-  }
-
-  int _currentDMCount = 0;
-  int _currentReqCount = 0;
-
-  void _updateTotalBadgeCount({int? dmCount, int? reqCount}) {
-    if (dmCount != null) _currentDMCount = dmCount;
-    if (reqCount != null) _currentReqCount = reqCount;
-    
-    if (mounted) {
-      setState(() {
-        _unreadMessagesCount = _currentDMCount + _currentReqCount;
-      });
-    }
   }
 
   Future<void> _loadProfile() async {
