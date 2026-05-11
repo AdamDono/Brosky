@@ -120,6 +120,12 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                   return (msg['sender_id'] == user.id && msg['receiver_id'] == widget.partnerId) || (msg['sender_id'] == widget.partnerId && msg['receiver_id'] == user.id);
                 }).toList();
                 
+                // Mark any new incoming messages as read
+                final unreadIncoming = messages.where((m) => m['receiver_id'] == user.id && m['is_read'] == false).toList();
+                if (unreadIncoming.isNotEmpty) {
+                  _markMessagesAsRead();
+                }
+
                 WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ListView.builder(

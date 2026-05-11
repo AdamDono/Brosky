@@ -4,6 +4,8 @@ import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.d
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:bro_app/src/features/onboarding/presentation/intro_screen.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -104,8 +106,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _redirect() async {
-    await Future.delayed(const Duration(seconds: 6));
+    await Future.delayed(const Duration(seconds: 4));
     if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenIntro = prefs.getBool('has_seen_intro') ?? false;
 
     final session = Supabase.instance.client.auth.currentSession;
     if (session != null) {
@@ -137,9 +142,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         }
       }
     } else {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AuthScreen()),
-      );
+      if (mounted) {
+        if (hasSeenIntro) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const AuthScreen()),
+          );
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const IntroScreen()),
+          );
+        }
+      }
     }
   }
 
