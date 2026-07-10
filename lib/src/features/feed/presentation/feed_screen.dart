@@ -101,7 +101,7 @@ class _FeedScreenState extends State<FeedScreen>
           .range(from, to);
           
       if (mounted) {
-        _allPosts.addAll(List<Map<String, dynamic>>.from(res);
+        _allPosts.addAll(List<Map<String, dynamic>>.from(res));
         _applyFilters();
         setState(() => _isLoadingMore = false);
       }

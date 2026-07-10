@@ -99,7 +99,7 @@ class _AuthScreenState extends State<AuthScreen> {
           data: {'username': username},
         );
         if (mounted) {
-          _showSuccess('Account Created! Please check your email to verify.');
+          _showSuccess('Account created successfully! Welcome to the Brotherhood, Bro!');
         }
       } else {
         // --- SIGN IN ---

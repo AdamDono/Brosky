@@ -1,4 +1,5 @@
 import 'package:bro_app/src/features/chat/presentation/direct_chat_screen.dart';
+import 'package:bro_app/src/features/chat/presentation/voice_call_screen.dart';
 
 import 'package:bro_app/src/features/feed/presentation/widgets/bro_post_card.dart';
 import 'dart:async';
@@ -319,13 +320,45 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       
                       if (!isMe) ...[
                         if (conversation == null)
-                          _buildActionButton(
-                            context, 
-                            'CONNECT', 
-                            Icons.handshake_rounded, 
-                            const Color(0xFF14B8A6), 
-                            Colors.white,
-                            () => _handleConnection(context, profile, conversation)
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildActionButton(
+                                context, 
+                                'CONNECT', 
+                                Icons.handshake_rounded, 
+                                const Color(0xFF14B8A6), 
+                                Colors.white,
+                                () => _handleConnection(context, profile, conversation),
+                                width: 140,
+                              ),
+                              const SizedBox(width: 12),
+                              _buildActionButton(
+                                context,
+                                'CALL (TEST)',
+                                Icons.mic_rounded,
+                                const Color(0xFF1E293B),
+                                Colors.white,
+                                () {
+                                  final myId = Supabase.instance.client.auth.currentUser!.id;
+                                  final otherId = profile['id'].toString();
+                                  final ids = [myId, otherId]..sort();
+                                  final roomId = 'bro_call_${ids[0]}_${ids[1]}';
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => VoiceCallScreen(
+                                        callId: roomId,
+                                        myUserId: myId,
+                                        myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
+                                        otherUserName: profile['username'] ?? 'Bro',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                width: 140,
+                              ),
+                            ],
                           )
                         else if (conversation['status'] == 'accepted')
                           Column(
@@ -347,25 +380,90 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              _buildActionButton(
-                                context, 
-                                'MESSAGE', 
-                                Icons.chat_bubble_outline, 
-                                const Color(0xFF1E293B), 
-                                Colors.white,
-                                () => _handleConnection(context, profile, conversation)
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildActionButton(
+                                    context,
+                                    'MESSAGE',
+                                    Icons.chat_bubble_outline,
+                                    const Color(0xFF1E293B),
+                                    Colors.white,
+                                    () => _handleConnection(context, profile, conversation),
+                                    width: 140,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildActionButton(
+                                    context,
+                                    'CALL',
+                                    Icons.mic_rounded,
+                                    const Color(0xFF14B8A6),
+                                    Colors.white,
+                                    () {
+                                      final myId = Supabase.instance.client.auth.currentUser!.id;
+                                      final otherId = profile['id'].toString();
+                                      // Deterministic room: smaller ID always goes first
+                                      final ids = [myId, otherId]..sort();
+                                      final roomId = 'bro_call_${ids[0]}_${ids[1]}';
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => VoiceCallScreen(
+                                            callId: roomId,
+                                            myUserId: myId,
+                                            myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
+                                            otherUserName: profile['username'] ?? 'Bro',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    width: 140,
+                                  ),
+                                ],
                               ),
                             ],
                           )
                         else if (conversation['status'] == 'pending')
                           if (conversation['initiator_id'] == Supabase.instance.client.auth.currentUser!.id)
-                            _buildActionButton(
-                              context, 
-                              'REQUEST SENT', 
-                              Icons.check, 
-                              const Color(0xFFF1F5F9), 
-                              const Color(0xFF94A3B8),
-                              null 
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                _buildActionButton(
+                                  context, 
+                                  'REQUEST SENT', 
+                                  Icons.check, 
+                                  const Color(0xFFF1F5F9), 
+                                  const Color(0xFF94A3B8),
+                                  null,
+                                  width: 140,
+                                ),
+                                const SizedBox(width: 12),
+                                _buildActionButton(
+                                  context,
+                                  'CALL (TEST)',
+                                  Icons.mic_rounded,
+                                  const Color(0xFF1E293B),
+                                  Colors.white,
+                                  () {
+                                    final myId = Supabase.instance.client.auth.currentUser!.id;
+                                    final otherId = profile['id'].toString();
+                                    final ids = [myId, otherId]..sort();
+                                    final roomId = 'bro_call_${ids[0]}_${ids[1]}';
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => VoiceCallScreen(
+                                          callId: roomId,
+                                          myUserId: myId,
+                                          myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
+                                          otherUserName: profile['username'] ?? 'Bro',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  width: 140,
+                                ),
+                              ],
                             )
                           else
                             Row(

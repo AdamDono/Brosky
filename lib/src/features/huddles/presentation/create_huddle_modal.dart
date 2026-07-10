@@ -30,7 +30,7 @@ class _CreateHuddleModalState extends State<CreateHuddleModal> {
   
   final List<dynamic> _tacticalIcons = [
     HugeIcons.strokeRoundedChampion,
-    HugeIcons.strokeRounded workHistory,
+    HugeIcons.strokeRoundedBriefcase01,
     HugeIcons.strokeRoundedFire,
     HugeIcons.strokeRoundedTarget02,
     HugeIcons.strokeRoundedCompass01,

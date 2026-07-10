@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'voice_call_screen.dart';
 
 class DirectChatScreen extends StatefulWidget {
   final String partnerId;
@@ -108,6 +109,29 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.mic_rounded, color: Color(0xFF14B8A6), size: 26),
+            tooltip: 'Voice Call',
+            onPressed: () {
+              final myId = Supabase.instance.client.auth.currentUser!.id;
+              final ids = [myId, widget.partnerId]..sort();
+              final roomId = 'bro_call_${ids[0]}_${ids[1]}';
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => VoiceCallScreen(
+                    callId: roomId,
+                    myUserId: myId,
+                    myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
+                    otherUserName: widget.partnerUsername,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: Column(
         children: [
