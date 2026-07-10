@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -25,10 +26,51 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
 
+  List<Map<String, dynamic>> _messages = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _messageSubscription;
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    _markMessagesAsRead();
+    _setupMessageListener();
+  }
+
+  void _setupMessageListener() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    _messageSubscription = Supabase.instance.client
+        .from('direct_messages')
+        .stream(primaryKey: ['id'])
+        .order('created_at', ascending: true)
+        .listen((data) {
+          final filtered = data.where((msg) {
+            return (msg['sender_id'] == user.id && msg['receiver_id'] == widget.partnerId) ||
+                   (msg['sender_id'] == widget.partnerId && msg['receiver_id'] == user.id);
+          }).toList();
+
+          if (mounted) {
+            setState(() {
+              _messages = filtered;
+              _isLoading = false;
+            });
+
+            // Mark any new incoming messages as read
+            final unreadIncoming = filtered.where((m) => m['receiver_id'] == user.id && m['is_read'] == false).toList();
+            if (unreadIncoming.isNotEmpty) {
+              _markMessagesAsRead();
+            }
+
+            WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          }
+        }, onError: (err) {
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        });
   }
 
   Future<void> _markMessagesAsRead() async {
@@ -46,6 +88,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
 
   @override
   void dispose() {
+    _messageSubscription?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -125,6 +168,8 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                     myUserId: myId,
                     myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
                     otherUserName: widget.partnerUsername,
+                    isCaller: true,
+                    partnerId: widget.partnerId,
                   ),
                 ),
               );
@@ -136,34 +181,18 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: Supabase.instance.client.from('direct_messages').stream(primaryKey: ['id']).order('created_at', ascending: true),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6)));
-                final messages = snapshot.data!.where((msg) {
-                  return (msg['sender_id'] == user.id && msg['receiver_id'] == widget.partnerId) || (msg['sender_id'] == widget.partnerId && msg['receiver_id'] == user.id);
-                }).toList();
-                
-                // Mark any new incoming messages as read
-                final unreadIncoming = messages.where((m) => m['receiver_id'] == user.id && m['is_read'] == false).toList();
-                if (unreadIncoming.isNotEmpty) {
-                  _markMessagesAsRead();
-                }
-
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (ctx, idx) {
-                    final msg = messages[idx];
-                    final isMe = msg['sender_id'] == user.id;
-                    return _buildMessageBubble(msg, isMe);
-                  },
-                );
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6)))
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (ctx, idx) {
+                      final msg = _messages[idx];
+                      final isMe = msg['sender_id'] == user.id;
+                      return _buildMessageBubble(msg, isMe);
+                    },
+                  ),
           ),
           _buildMessageInput(),
         ],

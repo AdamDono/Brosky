@@ -352,6 +352,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                         myUserId: myId,
                                         myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
                                         otherUserName: profile['username'] ?? 'Bro',
+                                        isCaller: true,
+                                        partnerId: otherId,
                                       ),
                                     ),
                                   );
@@ -413,6 +415,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                             myUserId: myId,
                                             myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
                                             otherUserName: profile['username'] ?? 'Bro',
+                                            isCaller: true,
+                                            partnerId: otherId,
                                           ),
                                         ),
                                       );
@@ -457,6 +461,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                           myUserId: myId,
                                           myUserName: Supabase.instance.client.auth.currentUser!.email ?? myId,
                                           otherUserName: profile['username'] ?? 'Bro',
+                                          isCaller: true,
+                                          partnerId: otherId,
                                         ),
                                       ),
                                     );

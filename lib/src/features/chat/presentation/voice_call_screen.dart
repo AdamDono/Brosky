@@ -2,13 +2,17 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class VoiceCallScreen extends StatelessWidget {
+class VoiceCallScreen extends StatefulWidget {
   final String callId;
   final String myUserId;
   final String myUserName;
   final String otherUserName;
   final bool isGroupCall;
+  final bool isCaller;
+  final String? partnerId;
+  final String? dbCallId; // Used if we are receiver and already have database ID
 
   const VoiceCallScreen({
     super.key,
@@ -17,22 +21,239 @@ class VoiceCallScreen extends StatelessWidget {
     required this.myUserName,
     required this.otherUserName,
     this.isGroupCall = false,
+    required this.isCaller,
+    this.partnerId,
+    this.dbCallId,
   });
 
+  @override
+  State<VoiceCallScreen> createState() => _VoiceCallScreenState();
+}
+
+class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProviderStateMixin {
   // ── ZegoCloud credentials ────────────────────────────────────────────────
   static const int _appId = 626459684;
   static const String _appSign =
       'c87f43b04893313468f98e5b258c9c41cd6e9cd6a085f65b5b887b365e4dab06';
 
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  String? _callRecordId;
+  StreamSubscription<List<Map<String, dynamic>>>? _callSubscription;
+  Timer? _timeoutTimer;
+
+  String _statusText = 'Connecting...';
+  bool _hasAnswered = false;
+  bool _chatHistorySaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasAnswered = !widget.isCaller;
+    _callRecordId = widget.dbCallId;
+
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    if (widget.isCaller) {
+      _startCallSignaling();
+    } else {
+      _listenToActiveCall();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _callSubscription?.cancel();
+    _timeoutTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _saveCallToChatHistory() async {
+    if (_chatHistorySaved || !widget.isCaller || widget.partnerId == null) return;
+    _chatHistorySaved = true;
+
+    final String messageContent = _hasAnswered
+        ? "📞 Voice call completed"
+        : "📞 Missed voice call";
+
+    try {
+      await Supabase.instance.client.from('direct_messages').insert({
+        'sender_id': widget.myUserId,
+        'receiver_id': widget.partnerId,
+        'content': messageContent,
+        'is_read': false, // Receiver gets an unread badge notification
+      });
+    } catch (e) {
+      debugPrint('Error saving call to chat history: $e');
+    }
+  }
+
+  Future<void> _startCallSignaling() async {
+    try {
+      // 1. Create a call record in Supabase
+      final callRecord = await Supabase.instance.client.from('calls').insert({
+        'caller_id': widget.myUserId,
+        'receiver_id': widget.partnerId,
+        'room_id': widget.callId,
+        'status': 'connecting'
+      }).select().single();
+
+      _callRecordId = callRecord['id'];
+
+      // 2. Listen to this record in real-time
+      _callSubscription = Supabase.instance.client
+          .from('calls')
+          .stream(primaryKey: ['id'])
+          .eq('id', _callRecordId!)
+          .listen((data) {
+            if (data.isNotEmpty) {
+              final call = data.first;
+              final status = call['status'];
+              
+              if (mounted) {
+                setState(() {
+                  if (status == 'connecting') {
+                    _statusText = 'Connecting...';
+                  } else if (status == 'ringing') {
+                    _statusText = 'Ringing...';
+                    // Reset timeout timer: give 30 seconds for ringing
+                    _startTimeoutTimer(30, 'No Answer');
+                  } else if (status == 'answered') {
+                    _hasAnswered = true;
+                    _cancelTimeoutTimer();
+                  } else if (status == 'rejected') {
+                    _statusText = 'Declined';
+                    _cancelTimeoutTimer();
+                    _saveCallToChatHistory().then((_) {
+                      Future.delayed(const Duration(seconds: 1), () {
+                        if (mounted) Navigator.of(context).pop();
+                      });
+                    });
+                  } else if (status == 'ended') {
+                    _statusText = 'Call Ended';
+                    _cancelTimeoutTimer();
+                    _saveCallToChatHistory().then((_) {
+                      Future.delayed(const Duration(seconds: 1), () {
+                        if (mounted) Navigator.of(context).pop();
+                      });
+                    });
+                  }
+                });
+              }
+            }
+          });
+
+      // 3. Start a timeout timer for 'connecting' (15 seconds)
+      _startTimeoutTimer(15, 'Offline');
+
+    } catch (e) {
+      debugPrint('Error starting call signaling: $e');
+      if (mounted) {
+        setState(() {
+          _statusText = 'Error';
+        });
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) Navigator.of(context).pop();
+        });
+      }
+    }
+  }
+
+  void _listenToActiveCall() {
+    if (_callRecordId == null) return;
+    _callSubscription = Supabase.instance.client
+        .from('calls')
+        .stream(primaryKey: ['id'])
+        .eq('id', _callRecordId!)
+        .listen((data) {
+          if (data.isNotEmpty) {
+            final call = data.first;
+            final status = call['status'];
+            if (status == 'ended' || status == 'rejected') {
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
+            }
+          }
+        });
+  }
+
+  void _startTimeoutTimer(int seconds, String timeoutStatus) {
+    _cancelTimeoutTimer();
+    _timeoutTimer = Timer(Duration(seconds: seconds), () async {
+      if (mounted && !_hasAnswered) {
+        setState(() {
+          _statusText = timeoutStatus;
+        });
+        
+        await _saveCallToChatHistory();
+        
+        // Update status to 'ended' in DB
+        if (_callRecordId != null) {
+          try {
+            await Supabase.instance.client
+                .from('calls')
+                .update({'status': 'ended'})
+                .eq('id', _callRecordId!);
+          } catch (_) {}
+        }
+        
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) Navigator.of(context).pop();
+        });
+      }
+    });
+  }
+
+  void _cancelTimeoutTimer() {
+    _timeoutTimer?.cancel();
+    _timeoutTimer = null;
+  }
+
+  Future<void> _endCall() async {
+    _cancelTimeoutTimer();
+    _callSubscription?.cancel();
+    
+    await _saveCallToChatHistory();
+    
+    if (_callRecordId != null) {
+      try {
+        await Supabase.instance.client
+            .from('calls')
+            .update({'status': 'ended'})
+            .eq('id', _callRecordId!);
+      } catch (_) {}
+    }
+    
+    if (mounted) Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Elegant dialing / ringing UI for the Caller
+    if (widget.isCaller && !_hasAnswered) {
+      return _buildDialingUI();
+    }
+
     // If running in a web browser, load the elegant web fallback UI instead
     // of Zego, since the mobile Zego package relies on dart:io Platform calls.
     if (kIsWeb) {
-      return WebMockCallScreen(otherUserName: otherUserName);
+      return WebMockCallScreen(
+        otherUserName: widget.otherUserName,
+        onHangUp: _endCall,
+      );
     }
 
-    final config = isGroupCall
+    final config = widget.isGroupCall
         ? ZegoUIKitPrebuiltCallConfig.groupVoiceCall()
         : ZegoUIKitPrebuiltCallConfig.oneOnOneVoiceCall();
 
@@ -47,22 +268,169 @@ class VoiceCallScreen extends StatelessWidget {
     ];
 
     // Top bar: show who you're calling
-    config.topMenuBar.title = otherUserName;
+    config.topMenuBar.title = widget.otherUserName;
     config.topMenuBar.isVisible = true;
 
     return ZegoUIKitPrebuiltCall(
       appID: _appId,
       appSign: _appSign,
-      callID: callId,
-      userID: myUserId,
-      userName: myUserName,
+      callID: widget.callId,
+      userID: widget.myUserId,
+      userName: widget.myUserName,
       config: config,
       events: ZegoUIKitPrebuiltCallEvents(
         onHangUpConfirmation: (event, defaultAction) async {
-          // Pop back to previous screen when call ends
+          await _endCall();
           if (event.context.mounted) Navigator.of(event.context).pop();
           return true;
         },
+      ),
+    );
+  }
+
+  Widget _buildDialingUI() {
+    final primaryTeal = const Color(0xFF14B8A6);
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000), // Obsidian
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 0.8,
+                  colors: [
+                    primaryTeal.withOpacity(0.08),
+                    const Color(0xFF000000),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 48.0),
+                  child: Column(
+                    children: const [
+                      Icon(Icons.lock_outline_rounded, color: Colors.white24, size: 16),
+                      SizedBox(height: 8),
+                      Text(
+                        'SECURE BRO CALL',
+                        style: TextStyle(
+                          color: Colors.white30,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  children: [
+                    ScaleTransition(
+                      scale: _pulseAnimation,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: primaryTeal.withOpacity(0.04),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primaryTeal.withOpacity(0.08),
+                          ),
+                          child: CircleAvatar(
+                            radius: 56,
+                            backgroundColor: const Color(0xFF111111),
+                            child: Text(
+                              widget.otherUserName.isNotEmpty
+                                  ? widget.otherUserName[0].toUpperCase()
+                                  : 'B',
+                              style: const TextStyle(
+                                fontSize: 44,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      widget.otherUserName,
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_statusText == 'Connecting...' || _statusText == 'Ringing...')
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: primaryTeal,
+                            ),
+                          ),
+                        Text(
+                          _statusText,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: (_statusText == 'Declined' || _statusText == 'Offline' || _statusText == 'No Answer')
+                                ? Colors.redAccent
+                                : Colors.white70,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 48),
+                  child: GestureDetector(
+                    onTap: _endCall,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.redAccent,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.redAccent,
+                            blurRadius: 15,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.call_end_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -71,7 +439,13 @@ class VoiceCallScreen extends StatelessWidget {
 // ── Elegant Mock Calling Interface for Web Preview ─────────────────────────
 class WebMockCallScreen extends StatefulWidget {
   final String otherUserName;
-  const WebMockCallScreen({super.key, required this.otherUserName});
+  final VoidCallback onHangUp;
+
+  const WebMockCallScreen({
+    super.key,
+    required this.otherUserName,
+    required this.onHangUp,
+  });
 
   @override
   State<WebMockCallScreen> createState() => _WebMockCallScreenState();
@@ -108,7 +482,7 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
           _statusText = 'No Answer';
         });
         Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) Navigator.of(context).pop();
+          if (mounted) widget.onHangUp();
         });
       }
     });
@@ -131,7 +505,7 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
       _statusText = 'Busy';
     });
     Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) widget.onHangUp();
     });
   }
 
@@ -142,7 +516,7 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
       _statusText = 'User Offline';
     });
     Future.delayed(const Duration(milliseconds: 2000), () {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) widget.onHangUp();
     });
   }
 
@@ -176,7 +550,7 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
     final primaryTeal = const Color(0xFF14B8A6);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0F1D), // Deep Midnight Blue
+      backgroundColor: const Color(0xFF000000), // Obsidian
       body: Stack(
         children: [
           // Background Gradient Glow
@@ -188,7 +562,7 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
                   radius: 0.8,
                   colors: [
                     primaryTeal.withOpacity(0.08),
-                    const Color(0xFF0A0F1D),
+                    const Color(0xFF000000),
                   ],
                 ),
               ),
@@ -385,7 +759,7 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
 
                           // Hang Up Button (Red)
                           GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
+                            onTap: widget.onHangUp,
                             child: Container(
                               width: 68,
                               height: 68,
@@ -476,3 +850,4 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
     );
   }
 }
+

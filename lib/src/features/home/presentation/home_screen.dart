@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:bro_app/src/features/chat/presentation/bro_direct_screen.dart';
+import 'package:bro_app/src/features/chat/presentation/voice_call_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/feed_screen.dart';
 import 'package:bro_app/src/features/huddles/presentation/huddles_screen.dart';
 import 'package:bro_app/src/features/huddles/presentation/squad_requests_screen.dart';
@@ -29,6 +31,11 @@ class _HomeScreenState extends State<HomeScreen> {
   int _broCount = 0;
   int _huddleCount = 0;
 
+  // Call Signaling State Variables
+  StreamSubscription<List<Map<String, dynamic>>>? _callSubscription;
+  bool _isShowingCallDialog = false;
+  String? _activeCallId;
+
   @override
   void initState() {
     super.initState();
@@ -40,7 +47,14 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
     _loadPendingRequests();
     _setupBadgeListeners();
+    _setupCallListener();
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _callSubscription?.cancel();
+    super.dispose();
   }
 
   void _setupBadgeListeners() {
@@ -493,6 +507,262 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _setupCallListener() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    // Listen for calls where receiver_id is current user and status is 'connecting'
+    _callSubscription = Supabase.instance.client
+        .from('calls')
+        .stream(primaryKey: ['id'])
+        .eq('receiver_id', user.id)
+        .listen((data) async {
+          if (_isShowingCallDialog || data.isEmpty) return;
+
+          // Find the first 'connecting' call
+          final activeCall = data.firstWhere(
+            (c) => c['status'] == 'connecting',
+            orElse: () => <String, dynamic>{},
+          );
+
+          if (activeCall.isEmpty) return;
+
+          final callId = activeCall['id'] as String;
+          final callerId = activeCall['caller_id'] as String;
+          final roomId = activeCall['room_id'] as String;
+
+          _isShowingCallDialog = true;
+          _activeCallId = callId;
+
+          // 1. Immediately update status to 'ringing' so caller knows we are online
+          try {
+            await Supabase.instance.client
+                .from('calls')
+                .update({'status': 'ringing'})
+                .eq('id', callId);
+          } catch (_) {}
+
+          // 2. Fetch the caller's username
+          String callerUsername = 'Bro';
+          String? callerAvatar;
+          try {
+            final profile = await Supabase.instance.client
+                .from('profiles')
+                .select('username, avatar_url')
+                .eq('id', callerId)
+                .single();
+            callerUsername = profile['username'] ?? 'Bro';
+            callerAvatar = profile['avatar_url'];
+          } catch (_) {}
+
+          if (!mounted) return;
+
+          // 3. Show incoming call dialog
+          _showIncomingCallDialog(callId, callerId, callerUsername, callerAvatar, roomId);
+        });
+  }
+
+  void _showIncomingCallDialog(
+    String callId,
+    String callerId,
+    String callerUsername,
+    String? callerAvatar,
+    String roomId,
+  ) {
+    StreamSubscription<List<Map<String, dynamic>>>? specificCallSub;
+    
+    specificCallSub = Supabase.instance.client
+        .from('calls')
+        .stream(primaryKey: ['id'])
+        .eq('id', callId)
+        .listen((data) {
+          if (data.isNotEmpty) {
+            final status = data.first['status'];
+            if (status == 'ended' || status == 'rejected') {
+              specificCallSub?.cancel();
+              if (_isShowingCallDialog && mounted) {
+                Navigator.of(context, rootNavigator: true).pop(false);
+                _isShowingCallDialog = false;
+                _activeCallId = null;
+              }
+            }
+          }
+        });
+
+    showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final primaryTeal = const Color(0xFF14B8A6);
+        return WillPopScope(
+          onWillPop: () async => false, // Prevent physical back button dismissal
+          child: Dialog(
+            backgroundColor: const Color(0xFF0F172A), // Premium Dark Slate
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            elevation: 24,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(color: primaryTeal, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'INCOMING BRO CALL',
+                        style: TextStyle(
+                          fontFamily: '.SF Pro Display',
+                          color: Color(0xFF14B8A6),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFF1E293B),
+                      border: Border.all(color: primaryTeal.withOpacity(0.3), width: 2),
+                      image: callerAvatar != null 
+                          ? DecorationImage(image: NetworkImage(callerAvatar), fit: BoxFit.cover) 
+                          : null,
+                    ),
+                    child: callerAvatar == null 
+                        ? const Icon(Icons.person, color: Colors.white24, size: 48) 
+                        : null,
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  Text(
+                    callerUsername,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: '.SF Pro Display',
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  
+                  const Text(
+                    'wants to voice chat',
+                    style: TextStyle(
+                      fontFamily: '.SF Pro Display',
+                      color: Colors.white54,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      GestureDetector(
+                        onTap: () async {
+                          specificCallSub?.cancel();
+                          Navigator.of(ctx).pop(false);
+                          _isShowingCallDialog = false;
+                          _activeCallId = null;
+                          try {
+                            await Supabase.instance.client
+                                .from('calls')
+                                .update({'status': 'rejected'})
+                                .eq('id', callId);
+                          } catch (_) {}
+                        },
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.redAccent,
+                              ),
+                              child: const Icon(Icons.call_end_rounded, color: Colors.white, size: 26),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Decline',
+                              style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      GestureDetector(
+                        onTap: () async {
+                          specificCallSub?.cancel();
+                          Navigator.of(ctx).pop(true);
+                          _isShowingCallDialog = false;
+                          _activeCallId = null;
+                          try {
+                            await Supabase.instance.client
+                                .from('calls')
+                                .update({'status': 'answered'})
+                                .eq('id', callId);
+                          } catch (_) {}
+                          
+                          if (mounted) {
+                            final user = Supabase.instance.client.auth.currentUser!;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => VoiceCallScreen(
+                                  callId: roomId,
+                                  myUserId: user.id,
+                                  myUserName: user.email ?? user.id,
+                                  otherUserName: callerUsername,
+                                  isCaller: false,
+                                  dbCallId: callId,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.green,
+                              ),
+                              child: const Icon(Icons.phone_rounded, color: Colors.white, size: 26),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Answer',
+                              style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.green, fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
