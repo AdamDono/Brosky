@@ -37,6 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isShowingCallDialog = false;
   String? _activeCallId;
 
+  // Presence Update Timer
+  Timer? _presenceTimer;
+
   @override
   void initState() {
     super.initState();
@@ -51,13 +54,37 @@ class _HomeScreenState extends State<HomeScreen> {
     _setupCallListener();
     _startIncomingCallPolling();
     _loadProfile();
+    _startPresenceHeartbeat();
   }
 
   @override
   void dispose() {
     _callSubscription?.cancel();
     _incomingCallPollingTimer?.cancel();
+    _presenceTimer?.cancel();
     super.dispose();
+  }
+
+  void _startPresenceHeartbeat() {
+    _updatePresence();
+    _presenceTimer?.cancel();
+    _presenceTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _updatePresence();
+    });
+  }
+
+  Future<void> _updatePresence() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      try {
+        await Supabase.instance.client
+            .from('profiles')
+            .update({'last_seen_at': DateTime.now().toUtc().toIso8601String()})
+            .eq('id', user.id);
+      } catch (e) {
+        debugPrint('Error updating presence heartbeat: $e');
+      }
+    }
   }
 
   void _setupBadgeListeners() {

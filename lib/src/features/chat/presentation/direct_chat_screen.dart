@@ -43,15 +43,50 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   Timer? _recordingTimer;
   int _recordingDuration = 0;
 
+  // Presence state variables
+  StreamSubscription? _partnerPresenceSubscription;
+  String? _partnerLastSeen;
+
   @override
   void initState() {
     super.initState();
     _messageController.addListener(_onTextChanged);
     _setupMessageListener();
+    _setupPartnerPresenceListener();
   }
 
   void _onTextChanged() {
     if (mounted) setState(() {});
+  }
+
+  void _setupPartnerPresenceListener() {
+    _partnerPresenceSubscription = Supabase.instance.client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .listen((data) {
+          if (data.isNotEmpty && mounted) {
+            final partnerProf = data.firstWhere(
+              (p) => p['id'] == widget.partnerId,
+              orElse: () => <String, dynamic>{},
+            );
+            if (partnerProf.isNotEmpty) {
+              setState(() {
+                _partnerLastSeen = partnerProf['last_seen_at'];
+              });
+            }
+          }
+        });
+  }
+
+  bool _isPartnerOnline() {
+    if (_partnerLastSeen == null) return false;
+    try {
+      final lastSeen = DateTime.parse(_partnerLastSeen!);
+      final difference = DateTime.now().toUtc().difference(lastSeen);
+      return difference.inSeconds < 60;
+    } catch (_) {
+      return false;
+    }
   }
 
   void _setupMessageListener() {
@@ -107,6 +142,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   @override
   void dispose() {
     _messageSubscription?.cancel();
+    _partnerPresenceSubscription?.cancel();
     _messageController.removeListener(_onTextChanged);
     _messageController.dispose();
     _scrollController.dispose();
@@ -345,20 +381,54 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF1E293B)), onPressed: () => Navigator.pop(context)),
         title: Row(
           children: [
-            Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFF1F5F9),
-                border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
-                image: widget.partnerAvatar != null ? DecorationImage(image: NetworkImage(widget.partnerAvatar!), fit: BoxFit.cover) : null,
-              ),
-              child: widget.partnerAvatar == null ? const Icon(Icons.person, color: Colors.black26, size: 18) : null,
+            Stack(
+              children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFF1F5F9),
+                    border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
+                    image: widget.partnerAvatar != null ? DecorationImage(image: NetworkImage(widget.partnerAvatar!), fit: BoxFit.cover) : null,
+                  ),
+                  child: widget.partnerAvatar == null ? const Icon(Icons.person, color: Colors.black26, size: 18) : null,
+                ),
+                if (_isPartnerOnline())
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14B8A6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 12),
-            Text(
-              widget.partnerUsername, 
-              style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF1E293B)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.partnerUsername, 
+                  style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF1E293B)),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  _isPartnerOnline() ? 'Active now' : 'Offline', 
+                  style: TextStyle(
+                    fontFamily: '.SF Pro Display', 
+                    fontSize: 10, 
+                    fontWeight: FontWeight.w600,
+                    color: _isPartnerOnline() ? const Color(0xFF14B8A6) : const Color(0xFF94A3B8),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

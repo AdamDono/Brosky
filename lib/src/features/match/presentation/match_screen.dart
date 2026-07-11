@@ -208,10 +208,10 @@ class _MatchScreenState extends State<MatchScreen> {
     final distance = distVal == 0.0 ? 'LOCAL' : '${distVal.toStringAsFixed(1)} KM';
     
     bool isOnline = false;
-    if (bro['updated_at'] != null) {
-      final lastActive = DateTime.parse(bro['updated_at']);
+    if (bro['last_seen_at'] != null) {
+      final lastActive = DateTime.parse(bro['last_seen_at']);
       final nowUtc = DateTime.now().toUtc();
-      isOnline = nowUtc.difference(lastActive).inMinutes < 15;
+      isOnline = nowUtc.difference(lastActive).inSeconds < 60;
     }
 
     return FutureBuilder<Map<String, dynamic>>(

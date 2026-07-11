@@ -57,13 +57,14 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
             itemBuilder: (context, index) {
               final convo = conversations[index];
               return FutureBuilder<Map<String, dynamic>>(
-                future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', convo['partner_id']).single(),
+                future: Supabase.instance.client.from('profiles').select('username, avatar_url, last_seen_at').eq('id', convo['partner_id']).single(),
                 builder: (context, profSnap) {
                   final profile = profSnap.data;
                   return _buildConversationCard({
                     ...convo,
                     'partner_username': profile?['username'] ?? 'Bro',
                     'partner_avatar': profile?['avatar_url'],
+                    'partner_last_seen': profile?['last_seen_at'],
                     'last_message': convo['content'],
                     'last_message_time': convo['created_at'],
                   });
@@ -119,15 +120,40 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            Container(
-              width: 52, height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFF8FAFC),
-                border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
-                image: convo['partner_avatar'] != null ? DecorationImage(image: NetworkImage(convo['partner_avatar']), fit: BoxFit.cover) : null,
-              ),
-              child: convo['partner_avatar'] == null ? const Icon(Icons.person, color: Colors.black26, size: 24) : null,
+            Stack(
+              children: [
+                Container(
+                  width: 52, height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFFF8FAFC),
+                    border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
+                    image: convo['partner_avatar'] != null ? DecorationImage(image: NetworkImage(convo['partner_avatar']), fit: BoxFit.cover) : null,
+                  ),
+                  child: convo['partner_avatar'] == null ? const Icon(Icons.person, color: Colors.black26, size: 24) : null,
+                ),
+                if (_isPartnerOnline(convo['partner_last_seen']))
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14B8A6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF14B8A6).withOpacity(0.4),
+                            blurRadius: 5,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -165,5 +191,16 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
         ),
       ),
     );
+  }
+
+  bool _isPartnerOnline(String? lastSeenAtStr) {
+    if (lastSeenAtStr == null) return false;
+    try {
+      final lastSeen = DateTime.parse(lastSeenAtStr);
+      final difference = DateTime.now().toUtc().difference(lastSeen);
+      return difference.inSeconds < 60;
+    } catch (_) {
+      return false;
+    }
   }
 }
