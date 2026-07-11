@@ -480,6 +480,27 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     );
   }
 
+  String _formatActualTime(DateTime dateTime) {
+    final localTime = dateTime.toLocal();
+    final hour = localTime.hour;
+    final minute = localTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+    final timeStr = '$displayHour:$minute $period';
+    
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(localTime.year, localTime.month, localTime.day);
+    
+    if (messageDate == today) {
+      return timeStr;
+    } else if (today.difference(messageDate).inDays == 1) {
+      return 'Yesterday, $timeStr';
+    } else {
+      return '${localTime.day}/${localTime.month}/${localTime.year}, $timeStr';
+    }
+  }
+
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe) {
     final createdAt = DateTime.parse(message['created_at']);
     const _primaryColor = Color(0xFF14B8A6);
@@ -499,8 +520,8 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
-                  timeago.format(createdAt), 
-                  style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+                  _formatActualTime(createdAt), 
+                  style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -535,7 +556,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              timeago.format(createdAt), 
+              _formatActualTime(createdAt), 
               style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
             ),
           ],
