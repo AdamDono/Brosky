@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Call Signaling State Variables
   StreamSubscription<List<Map<String, dynamic>>>? _callSubscription;
+  Timer? _incomingCallPollingTimer;
   bool _isShowingCallDialog = false;
   String? _activeCallId;
 
@@ -48,12 +49,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadPendingRequests();
     _setupBadgeListeners();
     _setupCallListener();
+    _startIncomingCallPolling();
     _loadProfile();
   }
 
   @override
   void dispose() {
     _callSubscription?.cancel();
+    _incomingCallPollingTimer?.cancel();
     super.dispose();
   }
 
@@ -514,17 +517,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    // Listen for calls where receiver_id is current user and status is 'connecting'
+    // Stream the calls table and do all filtering in Dart to bypass Postgres Realtime UUID replication bugs
     _callSubscription = Supabase.instance.client
         .from('calls')
         .stream(primaryKey: ['id'])
-        .eq('receiver_id', user.id)
         .listen((data) async {
           if (_isShowingCallDialog || data.isEmpty) return;
 
-          // Find the first 'connecting' call
+          // Find the first 'connecting' call where we are the receiver
           final activeCall = data.firstWhere(
-            (c) => c['status'] == 'connecting',
+            (c) => c['receiver_id'] == user.id && c['status'] == 'connecting',
             orElse: () => <String, dynamic>{},
           );
 
@@ -543,7 +545,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 .from('calls')
                 .update({'status': 'ringing'})
                 .eq('id', callId);
-          } catch (_) {}
+          } catch (e) {
+            debugPrint('Error updating status to ringing: $e');
+          }
 
           // 2. Fetch the caller's username
           String callerUsername = 'Bro';
@@ -565,6 +569,62 @@ class _HomeScreenState extends State<HomeScreen> {
         });
   }
 
+  void _startIncomingCallPolling() {
+    _incomingCallPollingTimer?.cancel();
+    _incomingCallPollingTimer = Timer.periodic(const Duration(milliseconds: 2500), (timer) async {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null || _isShowingCallDialog) return;
+
+      try {
+        final List<dynamic> data = await Supabase.instance.client
+            .from('calls')
+            .select()
+            .eq('receiver_id', user.id)
+            .eq('status', 'connecting');
+
+        if (data.isNotEmpty && !_isShowingCallDialog && mounted) {
+          final activeCall = data.first;
+          final callId = activeCall['id'] as String;
+          final callerId = activeCall['caller_id'] as String;
+          final roomId = activeCall['room_id'] as String;
+
+          _isShowingCallDialog = true;
+          _activeCallId = callId;
+
+          // 1. Immediately update status to 'ringing' so caller knows we are online
+          try {
+            await Supabase.instance.client
+                .from('calls')
+                .update({'status': 'ringing'})
+                .eq('id', callId);
+          } catch (e) {
+            debugPrint('Error updating status to ringing: $e');
+          }
+
+          // 2. Fetch the caller's username
+          String callerUsername = 'Bro';
+          String? callerAvatar;
+          try {
+            final profile = await Supabase.instance.client
+                .from('profiles')
+                .select('username, avatar_url')
+                .eq('id', callerId)
+                .single();
+            callerUsername = profile['username'] ?? 'Bro';
+            callerAvatar = profile['avatar_url'];
+          } catch (_) {}
+
+          if (!mounted) return;
+
+          // 3. Show incoming call dialog
+          _showIncomingCallDialog(callId, callerId, callerUsername, callerAvatar, roomId);
+        }
+      } catch (e) {
+        debugPrint('Error polling incoming calls: $e');
+      }
+    });
+  }
+
   void _showIncomingCallDialog(
     String callId,
     String callerId,
@@ -573,24 +633,58 @@ class _HomeScreenState extends State<HomeScreen> {
     String roomId,
   ) {
     StreamSubscription<List<Map<String, dynamic>>>? specificCallSub;
+    Timer? dialogPollTimer;
+
+    void cleanupDialog() {
+      specificCallSub?.cancel();
+      dialogPollTimer?.cancel();
+    }
     
     specificCallSub = Supabase.instance.client
         .from('calls')
         .stream(primaryKey: ['id'])
-        .eq('id', callId)
         .listen((data) {
           if (data.isNotEmpty) {
-            final status = data.first['status'];
-            if (status == 'ended' || status == 'rejected') {
-              specificCallSub?.cancel();
-              if (_isShowingCallDialog && mounted) {
-                Navigator.of(context, rootNavigator: true).pop(false);
-                _isShowingCallDialog = false;
-                _activeCallId = null;
+            final activeCall = data.firstWhere(
+              (c) => c['id'] == callId,
+              orElse: () => <String, dynamic>{},
+            );
+            if (activeCall.isNotEmpty) {
+              final status = activeCall['status'];
+              if (status == 'ended' || status == 'rejected') {
+                cleanupDialog();
+                if (_isShowingCallDialog && mounted) {
+                  Navigator.of(context, rootNavigator: true).pop(false);
+                  _isShowingCallDialog = false;
+                  _activeCallId = null;
+                }
               }
             }
           }
         });
+
+    // Dialog status polling fallback
+    dialogPollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      try {
+        final data = await Supabase.instance.client
+            .from('calls')
+            .select('status')
+            .eq('id', callId)
+            .maybeSingle();
+
+        if (data != null && mounted) {
+          final status = data['status'];
+          if (status == 'ended' || status == 'rejected') {
+            cleanupDialog();
+            if (_isShowingCallDialog && mounted) {
+              Navigator.of(context, rootNavigator: true).pop(false);
+              _isShowingCallDialog = false;
+              _activeCallId = null;
+            }
+          }
+        }
+      } catch (_) {}
+    });
 
     showDialog<bool>(
       context: context,
@@ -675,7 +769,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       GestureDetector(
                         onTap: () async {
-                          specificCallSub?.cancel();
+                          cleanupDialog();
                           Navigator.of(ctx).pop(false);
                           _isShowingCallDialog = false;
                           _activeCallId = null;
@@ -684,7 +778,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 .from('calls')
                                 .update({'status': 'rejected'})
                                 .eq('id', callId);
-                          } catch (_) {}
+                          } catch (e) {
+                            debugPrint('Error updating status to rejected: $e');
+                          }
                         },
                         child: Column(
                           children: [
@@ -708,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       
                       GestureDetector(
                         onTap: () async {
-                          specificCallSub?.cancel();
+                          cleanupDialog();
                           Navigator.of(ctx).pop(true);
                           _isShowingCallDialog = false;
                           _activeCallId = null;
@@ -717,7 +813,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 .from('calls')
                                 .update({'status': 'answered'})
                                 .eq('id', callId);
-                          } catch (_) {}
+                          } catch (e) {
+                            debugPrint('Error updating status to answered: $e');
+                          }
                           
                           if (mounted) {
                             final user = Supabase.instance.client.auth.currentUser!;

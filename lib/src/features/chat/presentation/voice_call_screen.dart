@@ -42,6 +42,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
   String? _callRecordId;
   StreamSubscription<List<Map<String, dynamic>>>? _callSubscription;
   Timer? _timeoutTimer;
+  Timer? _pollingTimer;
 
   String _statusText = 'Connecting...';
   bool _hasAnswered = false;
@@ -65,7 +66,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
     if (widget.isCaller) {
       _startCallSignaling();
     } else {
-      _listenToActiveCall();
+      _startCallStatusMonitoring();
     }
   }
 
@@ -74,6 +75,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
     _pulseController.dispose();
     _callSubscription?.cancel();
     _timeoutTimer?.cancel();
+    _pollingTimer?.cancel();
     super.dispose();
   }
 
@@ -109,51 +111,11 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
 
       _callRecordId = callRecord['id'];
 
-      // 2. Listen to this record in real-time
-      _callSubscription = Supabase.instance.client
-          .from('calls')
-          .stream(primaryKey: ['id'])
-          .eq('id', _callRecordId!)
-          .listen((data) {
-            if (data.isNotEmpty) {
-              final call = data.first;
-              final status = call['status'];
-              
-              if (mounted) {
-                setState(() {
-                  if (status == 'connecting') {
-                    _statusText = 'Connecting...';
-                  } else if (status == 'ringing') {
-                    _statusText = 'Ringing...';
-                    // Reset timeout timer: give 30 seconds for ringing
-                    _startTimeoutTimer(30, 'No Answer');
-                  } else if (status == 'answered') {
-                    _hasAnswered = true;
-                    _cancelTimeoutTimer();
-                  } else if (status == 'rejected') {
-                    _statusText = 'Declined';
-                    _cancelTimeoutTimer();
-                    _saveCallToChatHistory().then((_) {
-                      Future.delayed(const Duration(seconds: 1), () {
-                        if (mounted) Navigator.of(context).pop();
-                      });
-                    });
-                  } else if (status == 'ended') {
-                    _statusText = 'Call Ended';
-                    _cancelTimeoutTimer();
-                    _saveCallToChatHistory().then((_) {
-                      Future.delayed(const Duration(seconds: 1), () {
-                        if (mounted) Navigator.of(context).pop();
-                      });
-                    });
-                  }
-                });
-              }
-            }
-          });
+      // 2. Start monitoring the call status continuously for both caller and receiver
+      _startCallStatusMonitoring();
 
-      // 3. Start a timeout timer for 'connecting' (15 seconds)
-      _startTimeoutTimer(15, 'Offline');
+      // 3. Start a timeout timer for 'connecting' (40 seconds)
+      _startTimeoutTimer(40, 'Offline');
 
     } catch (e) {
       debugPrint('Error starting call signaling: $e');
@@ -168,20 +130,94 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
     }
   }
 
-  void _listenToActiveCall() {
-    if (_callRecordId == null) return;
+  void _startCallStatusMonitoring() {
+    // 1. Listen via database polling backup
+    _pollingTimer?.cancel();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (_callRecordId == null) return;
+      try {
+        final data = await Supabase.instance.client
+            .from('calls')
+            .select()
+            .eq('id', _callRecordId!)
+            .maybeSingle();
+
+        if (data != null && mounted) {
+          final status = data['status'];
+          
+          setState(() {
+            if (status == 'connecting') {
+              _statusText = 'Connecting...';
+            } else if (status == 'ringing') {
+              if (widget.isCaller && _statusText != 'Ringing...') {
+                _statusText = 'Ringing...';
+                _startTimeoutTimer(30, 'No Answer');
+              }
+            } else if (status == 'answered') {
+              if (widget.isCaller && !_hasAnswered) {
+                _hasAnswered = true;
+                _cancelTimeoutTimer();
+              }
+            } else if (status == 'rejected' || status == 'ended') {
+              _cancelTimeoutTimer();
+              _pollingTimer?.cancel();
+              _callSubscription?.cancel();
+              
+              _statusText = status == 'rejected' ? 'Declined' : 'Call Ended';
+              
+              _saveCallToChatHistory().then((_) {
+                Future.delayed(const Duration(seconds: 1), () {
+                  if (mounted) Navigator.of(context).pop();
+                });
+              });
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint('Error polling call status: $e');
+      }
+    });
+
+    // 2. Listen via Stream subscription in parallel
+    _callSubscription?.cancel();
     _callSubscription = Supabase.instance.client
         .from('calls')
         .stream(primaryKey: ['id'])
-        .eq('id', _callRecordId!)
         .listen((data) {
-          if (data.isNotEmpty) {
-            final call = data.first;
-            final status = call['status'];
-            if (status == 'ended' || status == 'rejected') {
-              if (mounted) {
-                Navigator.of(context).pop();
-              }
+          if (data.isNotEmpty && mounted) {
+            final call = data.firstWhere(
+              (c) => c['id'] == _callRecordId!,
+              orElse: () => <String, dynamic>{},
+            );
+            if (call.isNotEmpty) {
+              final status = call['status'];
+              setState(() {
+                if (status == 'connecting') {
+                  _statusText = 'Connecting...';
+                } else if (status == 'ringing') {
+                  if (widget.isCaller && _statusText != 'Ringing...') {
+                    _statusText = 'Ringing...';
+                    _startTimeoutTimer(30, 'No Answer');
+                  }
+                } else if (status == 'answered') {
+                  if (widget.isCaller && !_hasAnswered) {
+                    _hasAnswered = true;
+                    _cancelTimeoutTimer();
+                  }
+                } else if (status == 'rejected' || status == 'ended') {
+                  _cancelTimeoutTimer();
+                  _pollingTimer?.cancel();
+                  _callSubscription?.cancel();
+                  
+                  _statusText = status == 'rejected' ? 'Declined' : 'Call Ended';
+                  
+                  _saveCallToChatHistory().then((_) {
+                    Future.delayed(const Duration(seconds: 1), () {
+                      if (mounted) Navigator.of(context).pop();
+                    });
+                  });
+                }
+              });
             }
           }
         });
@@ -222,6 +258,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
   Future<void> _endCall() async {
     _cancelTimeoutTimer();
     _callSubscription?.cancel();
+    _pollingTimer?.cancel();
     
     await _saveCallToChatHistory();
     
@@ -250,6 +287,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
       return WebMockCallScreen(
         otherUserName: widget.otherUserName,
         onHangUp: _endCall,
+        isConnected: _hasAnswered,
       );
     }
 
@@ -440,11 +478,13 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> with SingleTickerProv
 class WebMockCallScreen extends StatefulWidget {
   final String otherUserName;
   final VoidCallback onHangUp;
+  final bool isConnected;
 
   const WebMockCallScreen({
     super.key,
     required this.otherUserName,
     required this.onHangUp,
+    required this.isConnected,
   });
 
   @override
@@ -466,6 +506,9 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
   @override
   void initState() {
     super.initState();
+    _isConnected = widget.isConnected;
+    _statusText = _isConnected ? '00:00' : 'Ringing...';
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -475,17 +518,21 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // If no action is taken, ring for 30 seconds then time out
-    _ringTimeoutTimer = Timer(const Duration(seconds: 30), () {
-      if (mounted && !_isConnected && _statusText == 'Ringing...') {
-        setState(() {
-          _statusText = 'No Answer';
-        });
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) widget.onHangUp();
-        });
-      }
-    });
+    if (_isConnected) {
+      _startTimer();
+    } else {
+      // If no action is taken, ring for 30 seconds then time out
+      _ringTimeoutTimer = Timer(const Duration(seconds: 30), () {
+        if (mounted && !_isConnected && _statusText == 'Ringing...') {
+          setState(() {
+            _statusText = 'No Answer';
+          });
+          Future.delayed(const Duration(seconds: 2), () {
+            if (mounted) widget.onHangUp();
+          });
+        }
+      });
+    }
   }
 
   void _simulateAnswer() {
