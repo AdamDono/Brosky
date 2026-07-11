@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
@@ -592,6 +593,68 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
+  Widget _buildAudioWaves() {
+    final primaryTeal = const Color(0xFF14B8A6);
+    if (!_isConnected) return const SizedBox(height: 36);
+
+    // If muted, show flat audio line
+    if (_isMuted) {
+      return Container(
+        height: 24,
+        margin: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(12, (index) {
+            return Container(
+              width: 3,
+              height: 4,
+              margin: const EdgeInsets.symmetric(horizontal: 2.5),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            );
+          }),
+        ),
+      );
+    }
+
+    return Container(
+      height: 24,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(12, (index) {
+          return AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final double time = DateTime.now().millisecondsSinceEpoch / 150.0;
+              final double value = (sin(time + index * 0.7) + 1.0) / 2.0;
+              final double height = 4.0 + (value * 20.0);
+              
+              return Container(
+                width: 3,
+                height: height,
+                margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                decoration: BoxDecoration(
+                  color: primaryTeal,
+                  borderRadius: BorderRadius.circular(2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryTeal.withOpacity(0.4),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    )
+                  ],
+                ),
+              );
+            },
+          );
+        }),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryTeal = const Color(0xFF14B8A6);
@@ -719,7 +782,7 @@ class _WebMockCallScreenState extends State<WebMockCallScreen>
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    _buildAudioWaves(),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
