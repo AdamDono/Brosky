@@ -163,6 +163,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  String _formatActualTime(DateTime dateTime) {
+    final localTime = dateTime.toLocal();
+    final hour = localTime.hour;
+    final minute = localTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+    final timeStr = '$displayHour:$minute $period';
+    
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(localTime.year, localTime.month, localTime.day);
+    
+    if (messageDate == today) {
+      return timeStr;
+    } else if (today.difference(messageDate).inDays == 1) {
+      return 'Yesterday, $timeStr';
+    } else {
+      return '${localTime.day}/${localTime.month}/${localTime.year}, $timeStr';
+    }
+  }
+
   Widget _buildHeroPost(String userId, DateTime createdAt) {
     return FutureBuilder<Map<String, dynamic>>(
       future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single(),
@@ -191,7 +212,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
-                      Text(timeago.format(createdAt).toUpperCase(), style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                      Text(_formatActualTime(createdAt).toUpperCase(), style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
                     ],
                   ),
                 ],
@@ -248,7 +269,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       children: [
                         Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B))),
                         const SizedBox(width: 8),
-                        Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
+                        Text('· ${_formatActualTime(createdAt)}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
                       ],
                     ),
                     const SizedBox(height: 6),

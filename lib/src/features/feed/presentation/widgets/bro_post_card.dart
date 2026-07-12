@@ -23,6 +23,12 @@ class _BroPostCardState extends State<BroPostCard> {
   Map<String, dynamic>? _profileData;
   final Color _teal = const Color(0xFF14B8A6);
 
+  // Animation states
+  bool _showHeartOverlay = false;
+  double _heartScale = 0.0;
+  double _heartOpacity = 0.0;
+  double _likeIconScale = 1.0;
+
   @override
   void initState() {
     super.initState();
@@ -69,12 +75,22 @@ class _BroPostCardState extends State<BroPostCard> {
     final isRemoving = _myReaction != null;
 
     setState(() {
+      _likeIconScale = 1.4;
       if (isRemoving) {
         _totalReactions--;
         _myReaction = null;
       } else {
         _totalReactions++;
         _myReaction = '❤️';
+      }
+    });
+
+    // Reset button scale micro-animation
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() {
+          _likeIconScale = 1.0;
+        });
       }
     });
 
@@ -92,6 +108,45 @@ class _BroPostCardState extends State<BroPostCard> {
       debugPrint('Error reacting: $e');
       _fetchStats();
     }
+  }
+
+  void _triggerDoubleTapLike() {
+    // Show overlay scale-up
+    setState(() {
+      _showHeartOverlay = true;
+      _heartScale = 1.0;
+      _heartOpacity = 1.0;
+    });
+
+    if (_myReaction == null) {
+      _handleReaction();
+    } else {
+      // Trigger a like button pop animation even if already liked
+      setState(() => _likeIconScale = 1.4);
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted) setState(() => _likeIconScale = 1.0);
+      });
+    }
+
+    // Fade out and scale up slightly (pop effect)
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) {
+        setState(() {
+          _heartScale = 1.4;
+          _heartOpacity = 0.0;
+        });
+      }
+    });
+
+    // Reset state completely
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (mounted) {
+        setState(() {
+          _showHeartOverlay = false;
+          _heartScale = 0.0;
+        });
+      }
+    });
   }
 
   void _navigateToDetail() {
@@ -218,35 +273,73 @@ class _BroPostCardState extends State<BroPostCard> {
                     ),
                     const SizedBox(height: 4),
                     
-                    // Content Text + Image (Wrapped in Nav Bridge)
+                    // Content Text + Image (Wrapped in Nav Bridge + Double-tap support)
                     GestureDetector(
                       onTap: _navigateToDetail,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      onDoubleTap: _triggerDoubleTapLike,
+                      child: Stack(
+                        alignment: Alignment.center,
                         children: [
-                          Text(
-                            widget.post['content'] ?? '', 
-                            style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: const Color(0xFF1E293B), fontWeight: FontWeight.w400)
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.post['content'] ?? '', 
+                                style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: Color(0xFF1E293B), fontWeight: FontWeight.w400)
+                              ),
+                              if (widget.post['image_url'] != null) ...[
+                                const SizedBox(height: 12),
+                                Container(
+                                  constraints: const BoxConstraints(maxHeight: 400),
+                                  width: double.infinity,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: AspectRatio(
+                                      aspectRatio: 16 / 9, 
+                                      child: Image.network(
+                                        widget.post['image_url'],
+                                        fit: BoxFit.cover,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Container(
+                                            color: const Color(0xFFF8FAFC),
+                                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          if (widget.post['image_url'] != null)
-                            Container(
-                              constraints: const BoxConstraints(maxHeight: 400),
-                              width: double.infinity,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: AspectRatio(
-                                  aspectRatio: 16 / 9, 
-                                  child: Image.network(
-                                    widget.post['image_url'],
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        color: const Color(0xFFF8FAFC),
-                                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                      );
-                                    },
+                          if (_showHeartOverlay)
+                            IgnorePointer(
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 250),
+                                opacity: _heartOpacity,
+                                child: AnimatedScale(
+                                  duration: const Duration(milliseconds: 250),
+                                  scale: _heartScale,
+                                  curve: Curves.elasticOut,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black26,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.redAccent.withOpacity(0.4),
+                                          blurRadius: 30,
+                                          spreadRadius: 8,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.favorite_rounded,
+                                      color: Colors.redAccent,
+                                      size: 80,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -277,10 +370,14 @@ class _BroPostCardState extends State<BroPostCard> {
                           onTap: _handleReaction,
                           child: Row(
                             children: [
-                              HugeIcon(
-                                icon: HugeIcons.strokeRoundedFavourite, 
-                                color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), 
-                                size: 18
+                              AnimatedScale(
+                                duration: const Duration(milliseconds: 150),
+                                scale: _likeIconScale,
+                                child: HugeIcon(
+                                  icon: HugeIcons.strokeRoundedFavourite, 
+                                  color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), 
+                                  size: 18
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
