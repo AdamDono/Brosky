@@ -14,8 +14,88 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocusNode = FocusNode();
   bool _isSubmitting = false;
   final Color _teal = const Color(0xFF14B8A6);
+
+  // Stats / Action states
+  int _commentCount = 0;
+  int _totalReactions = 0;
+  String? _myReaction;
+  double _likeIconScale = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _commentFocusNode.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchStats() async {
+    final postId = widget.post['id'];
+    final user = Supabase.instance.client.auth.currentUser;
+    try {
+      final commentRes = await Supabase.instance.client.from('post_comments').select('id').eq('post_id', postId);
+      final reactionsRes = await Supabase.instance.client.from('post_likes').select('reaction_type, user_id').eq('post_id', postId);
+      
+      final reactions = List<Map<String, dynamic>>.from(reactionsRes);
+      String? myReact;
+      for (var r in reactions) {
+        if (r['user_id'] == user?.id) myReact = r['reaction_type'];
+      }
+
+      if (mounted) {
+        setState(() {
+          _commentCount = commentRes.length;
+          _totalReactions = reactions.length;
+          _myReaction = myReact;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _handleReaction() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    
+    final isRemoving = _myReaction != null;
+
+    setState(() {
+      _likeIconScale = 1.4;
+      if (isRemoving) {
+        _totalReactions--;
+        _myReaction = null;
+      } else {
+        _totalReactions++;
+        _myReaction = '❤️';
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) setState(() => _likeIconScale = 1.0);
+    });
+
+    try {
+      if (isRemoving) {
+        await Supabase.instance.client.from('post_likes').delete().eq('post_id', widget.post['id']).eq('user_id', user.id);
+      } else {
+        await Supabase.instance.client.from('post_likes').upsert({
+          'post_id': widget.post['id'],
+          'user_id': user.id,
+          'reaction_type': '❤️'
+        }, onConflict: 'post_id,user_id');
+      }
+    } catch (e) {
+      debugPrint('Error reacting: $e');
+      _fetchStats();
+    }
+  }
 
   Future<void> _submitComment() async {
     final text = _commentController.text.trim();
@@ -34,6 +114,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       });
       _commentController.clear();
       FocusScope.of(context).unfocus();
+      _fetchStats();
     } catch (e) {
       debugPrint('Comment failed: $e');
     } finally {
@@ -99,7 +180,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: comments.length,
                         separatorBuilder: (ctx, idx) => const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
-                        itemBuilder: (context, index) => _buildCommentTile(comments[index]),
+                        itemBuilder: (context, index) => _CommentTile(comment: comments[index]),
                       );
                     },
                   ),
@@ -129,6 +210,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                     child: TextField(
                       controller: _commentController,
+                      focusNode: _commentFocusNode,
                       maxLines: null,
                       style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, color: const Color(0xFF1E293B)),
                       decoration: InputDecoration(
@@ -211,8 +293,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
-                      Text(_formatActualTime(createdAt).toUpperCase(), style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                      Text(username, style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF1E293B))),
+                      Text(_formatActualTime(createdAt).toUpperCase(), style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1)),
                     ],
                   ),
                 ],
@@ -220,7 +302,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               const SizedBox(height: 24),
               Text(
                 widget.post['content'] ?? '', 
-                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, height: 1.4, color: const Color(0xFF0F172A), fontWeight: FontWeight.w500, letterSpacing: -0.2)
+                style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, height: 1.4, color: Color(0xFF0F172A), fontWeight: FontWeight.w500, letterSpacing: -0.2)
               ),
               if (widget.post['image_url'] != null)
                 Padding(
@@ -231,56 +313,229 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ),
                 ),
               const SizedBox(height: 20),
+              const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Comment Button
+                  GestureDetector(
+                    onTap: () => _commentFocusNode.requestFocus(),
+                    child: Row(
+                      children: [
+                        const HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: Color(0xFF64748B), size: 20),
+                        const SizedBox(width: 8),
+                        Text('$_commentCount', style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                  // Like Button
+                  GestureDetector(
+                    onTap: _handleReaction,
+                    child: Row(
+                      children: [
+                        AnimatedScale(
+                          duration: const Duration(milliseconds: 150),
+                          scale: _likeIconScale,
+                          child: HugeIcon(
+                            icon: HugeIcons.strokeRoundedFavourite, 
+                            color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), 
+                            size: 20
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  const SizedBox(width: 20),
+                ],
+              ),
             ],
           ),
         );
       }
     );
   }
+}
 
-  Widget _buildCommentTile(Map<String, dynamic> comment) {
-    final userId = comment['user_id'];
-    final createdAt = DateTime.parse(comment['created_at']);
-    return FutureBuilder<Map<String, dynamic>>(
-      future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single(),
-      builder: (context, snapshot) {
-        final profile = snapshot.data;
-        final username = profile?['username'] ?? 'Bro';
-        final avatarUrl = profile?['avatar_url'];
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle, color: const Color(0xFFF1F5F9),
-                  image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
-                ),
-                child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 20) : null,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+// --- STATEFUL MODULAR COMMENT TILE WITH COMMENT LIKES ---
+class _CommentTile extends StatefulWidget {
+  final Map<String, dynamic> comment;
+  const _CommentTile({super.key, required this.comment});
+
+  @override
+  State<_CommentTile> createState() => _CommentTileState();
+}
+
+class _CommentTileState extends State<_CommentTile> {
+  int _likesCount = 0;
+  bool _isLiked = false;
+  double _iconScale = 1.0;
+  Map<String, dynamic>? _profileData;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+    _fetchLikes();
+  }
+
+  Future<void> _fetchProfile() async {
+    final userId = widget.comment['user_id'];
+    try {
+      final profile = await Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single();
+      if (mounted) setState(() => _profileData = profile);
+    } catch (_) {}
+  }
+
+  Future<void> _fetchLikes() async {
+    final commentId = widget.comment['id'];
+    final user = Supabase.instance.client.auth.currentUser;
+    try {
+      final likesRes = await Supabase.instance.client.from('comment_likes').select('user_id').eq('comment_id', commentId);
+      final likesList = List<Map<String, dynamic>>.from(likesRes);
+      bool liked = false;
+      if (user != null) {
+        liked = likesList.any((l) => l['user_id'] == user.id);
+      }
+      if (mounted) {
+        setState(() {
+          _likesCount = likesList.length;
+          _isLiked = liked;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleLike() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    final commentId = widget.comment['id'];
+    final wasLiked = _isLiked;
+
+    setState(() {
+      _iconScale = 1.4;
+      if (wasLiked) {
+        _likesCount--;
+        _isLiked = false;
+      } else {
+        _likesCount++;
+        _isLiked = true;
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) setState(() => _iconScale = 1.0);
+    });
+
+    try {
+      if (wasLiked) {
+        await Supabase.instance.client.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id);
+      } else {
+        await Supabase.instance.client.from('comment_likes').insert({
+          'comment_id': commentId,
+          'user_id': user.id,
+        });
+      }
+    } catch (e) {
+      debugPrint('Error toggling comment like: $e');
+      _fetchLikes();
+    }
+  }
+
+  String _formatActualTime(DateTime dateTime) {
+    final localTime = dateTime.toLocal();
+    final hour = localTime.hour;
+    final minute = localTime.minute.toString().padLeft(2, '0');
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+    final timeStr = '$displayHour:$minute $period';
+    
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(localTime.year, localTime.month, localTime.day);
+    
+    if (messageDate == today) {
+      return timeStr;
+    } else if (today.difference(messageDate).inDays == 1) {
+      return 'Yesterday, $timeStr';
+    } else {
+      return '${localTime.day}/${localTime.month}/${localTime.year}, $timeStr';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = _profileData;
+    final username = profile?['username'] ?? 'Bro';
+    final avatarUrl = profile?['avatar_url'];
+    final createdAt = DateTime.parse(widget.comment['created_at']);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle, color: const Color(0xFFF1F5F9),
+              image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+            ),
+            child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 20) : null,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B))),
-                        const SizedBox(width: 8),
-                        Text('· ${_formatActualTime(createdAt)}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(comment['content'] ?? '', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, height: 1.5, color: const Color(0xFF334155))),
+                    Text(username, style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1E293B))),
+                    const SizedBox(width: 8),
+                    Text('· ${_formatActualTime(createdAt)}', style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(widget.comment['content'] ?? '', style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, height: 1.5, color: Color(0xFF334155))),
+              ],
+            ),
           ),
-        );
-      }
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _toggleLike,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedScale(
+                  duration: const Duration(milliseconds: 150),
+                  scale: _iconScale,
+                  child: HugeIcon(
+                    icon: HugeIcons.strokeRoundedFavourite, 
+                    color: _isLiked ? Colors.redAccent : const Color(0xFFCBD5E1),
+                    size: 18,
+                  ),
+                ),
+                if (_likesCount > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '$_likesCount',
+                    style: TextStyle(
+                      fontFamily: '.SF Pro Display',
+                      color: _isLiked ? Colors.redAccent : const Color(0xFF94A3B8),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

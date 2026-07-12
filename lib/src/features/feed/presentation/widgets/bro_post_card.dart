@@ -28,6 +28,7 @@ class _BroPostCardState extends State<BroPostCard> {
   double _heartScale = 0.0;
   double _heartOpacity = 0.0;
   double _likeIconScale = 1.0;
+  IconData _heartOverlayIcon = Icons.favorite_rounded;
 
   @override
   void initState() {
@@ -111,22 +112,18 @@ class _BroPostCardState extends State<BroPostCard> {
   }
 
   void _triggerDoubleTapLike() {
+    final wasLiked = _myReaction != null;
+
     // Show overlay scale-up
     setState(() {
       _showHeartOverlay = true;
       _heartScale = 1.0;
       _heartOpacity = 1.0;
+      _heartOverlayIcon = wasLiked ? Icons.favorite_border_rounded : Icons.favorite_rounded;
     });
 
-    if (_myReaction == null) {
-      _handleReaction();
-    } else {
-      // Trigger a like button pop animation even if already liked
-      setState(() => _likeIconScale = 1.4);
-      Future.delayed(const Duration(milliseconds: 150), () {
-        if (mounted) setState(() => _likeIconScale = 1.0);
-      });
-    }
+    // Always toggle
+    _handleReaction();
 
     // Fade out and scale up slightly (pop effect)
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -335,8 +332,8 @@ class _BroPostCardState extends State<BroPostCard> {
                                         ),
                                       ],
                                     ),
-                                    child: const Icon(
-                                      Icons.favorite_rounded,
+                                    child: Icon(
+                                      _heartOverlayIcon,
                                       color: Colors.redAccent,
                                       size: 80,
                                     ),
