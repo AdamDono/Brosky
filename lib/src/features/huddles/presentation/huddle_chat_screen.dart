@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:hugeicons/hugeicons.dart';
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 
 class HuddleChatScreen extends StatefulWidget {
   final String huddleId;
@@ -28,10 +30,77 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
   XFile? _imageFile;
   final _picker = ImagePicker();
 
+  // Voice Huddle State
+  bool _isInVoice = false;
+  bool _isMuted = false;
+  bool _isSpeaker = true;
+
   @override
   void initState() {
     super.initState();
     _joinHuddle();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    if (_isInVoice) {
+      _leaveVoiceCleanup();
+    }
+    super.dispose();
+  }
+
+  Future<void> _leaveVoiceCleanup() async {
+    final userId = Supabase.instance.client.auth.currentUser!.id;
+    try {
+      await Supabase.instance.client.from('huddle_voice_members').delete().eq('huddle_id', widget.huddleId).eq('user_id', userId);
+      final activeCheck = await Supabase.instance.client.from('huddle_voice_members').select('id').eq('huddle_id', widget.huddleId);
+      if ((activeCheck as List).isEmpty) {
+        await Supabase.instance.client.from('huddle_messages').insert({
+          'huddle_id': widget.huddleId,
+          'user_id': userId,
+          'content': '🎙️ Group Voice Huddle Ended',
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleVoiceJoin() async {
+    final userId = Supabase.instance.client.auth.currentUser!.id;
+    if (_isInVoice) {
+      setState(() => _isInVoice = false);
+      try {
+        await Supabase.instance.client.from('huddle_voice_members').delete().eq('huddle_id', widget.huddleId).eq('user_id', userId);
+        final activeCheck = await Supabase.instance.client.from('huddle_voice_members').select('id').eq('huddle_id', widget.huddleId);
+        if ((activeCheck as List).isEmpty) {
+          await Supabase.instance.client.from('huddle_messages').insert({
+            'huddle_id': widget.huddleId,
+            'user_id': userId,
+            'content': '🎙️ Group Voice Huddle Ended',
+          });
+        }
+      } catch (_) {}
+    } else {
+      try {
+        final activeCheck = await Supabase.instance.client.from('huddle_voice_members').select('id').eq('huddle_id', widget.huddleId);
+        final wasEmpty = (activeCheck as List).isEmpty;
+
+        setState(() => _isInVoice = true);
+        await Supabase.instance.client.from('huddle_voice_members').upsert({
+          'huddle_id': widget.huddleId,
+          'user_id': userId,
+        });
+
+        if (wasEmpty) {
+          await Supabase.instance.client.from('huddle_messages').insert({
+            'huddle_id': widget.huddleId,
+            'user_id': userId,
+            'content': '🎙️ Group Voice Huddle Started',
+          });
+        }
+      } catch (_) {}
+    }
   }
 
   Future<void> _joinHuddle() async {
@@ -220,7 +289,7 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
       appBar: AppBar(
         title: Text(
           widget.huddleName.toUpperCase(), 
-          style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), fontSize: 16, letterSpacing: 1),
+          style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, color: Color(0xFF1E293B), fontSize: 16, letterSpacing: 1),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -232,6 +301,14 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
         ),
         actions: [
           IconButton(
+            icon: HugeIcon(
+              icon: HugeIcons.strokeRoundedMic01,
+              color: _isInVoice ? const Color(0xFF14B8A6) : const Color(0xFF94A3B8),
+              size: 20,
+            ),
+            onPressed: _toggleVoiceJoin,
+          ),
+          IconButton(
             icon: const Icon(Icons.info_outline, color: Color(0xFF94A3B8)),
             onPressed: _showHuddleInfoModal,
           ),
@@ -239,6 +316,20 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
       ),
       body: Column(
         children: [
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: Supabase.instance.client
+                .from('huddle_voice_members')
+                .stream(primaryKey: ['id'])
+                .eq('huddle_id', widget.huddleId),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final voiceMembers = snapshot.data!;
+              return _buildVoicePanel(voiceMembers);
+            },
+          ),
+          if (_isInVoice) _buildZegoBackgroundClient(),
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: Supabase.instance.client
@@ -378,6 +469,144 @@ class _HuddleChatScreenState extends State<HuddleChatScreen> {
       ),
     );
   }
+
+  Widget _buildVoicePanel(List<Map<String, dynamic>> voiceMembers) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final isMeIn = voiceMembers.any((m) => m['user_id'] == user?.id);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A), // Slate 900
+        border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.1), width: 1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.volume_up_rounded, color: Color(0xFF14B8A6), size: 16),
+              const SizedBox(width: 8),
+              const Text(
+                'VOICE HUDDLE ACTIVE',
+                style: TextStyle(
+                  fontFamily: '.SF Pro Display',
+                  color: Color(0xFF14B8A6),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 10,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const Spacer(),
+              if (!isMeIn)
+                GestureDetector(
+                  onTap: _toggleVoiceJoin,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF14B8A6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'JOIN',
+                      style: TextStyle(
+                        fontFamily: '.SF Pro Display',
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Scrollable active user list
+          SizedBox(
+            height: 38,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: voiceMembers.length,
+              itemBuilder: (context, index) {
+                final member = voiceMembers[index];
+                return _VoiceMemberAvatar(userId: member['user_id']);
+              },
+            ),
+          ),
+          if (isMeIn) ...[
+            const SizedBox(height: 12),
+            const Divider(color: Colors.white10, height: 1),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    _isMuted ? Icons.mic_off_rounded : Icons.mic_rounded,
+                    color: Colors.white70,
+                  ),
+                  onPressed: () {
+                    setState(() => _isMuted = !_isMuted);
+                  },
+                ),
+                const SizedBox(width: 24),
+                IconButton(
+                  icon: Icon(
+                    _isSpeaker ? Icons.volume_up_rounded : Icons.volume_down_rounded,
+                    color: Colors.white70,
+                  ),
+                  onPressed: () {
+                    setState(() => _isSpeaker = !_isSpeaker);
+                  },
+                ),
+                const SizedBox(width: 24),
+                GestureDetector(
+                  onTap: _toggleVoiceJoin,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.call_end_rounded, color: Colors.white, size: 20),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZegoBackgroundClient() {
+    if (kIsWeb) return const SizedBox.shrink(); // Zego does not load on web
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    final config = ZegoUIKitPrebuiltCallConfig.groupVoiceCall();
+    config.turnOnCameraWhenJoining = false;
+    config.turnOnMicrophoneWhenJoining = !_isMuted;
+    config.useSpeakerWhenJoining = _isSpeaker;
+
+    return Offstage(
+      offstage: true,
+      child: SizedBox(
+        width: 1, height: 1,
+        child: ZegoUIKitPrebuiltCall(
+          appID: 626459684,
+          appSign: 'c87f43b04893313468f98e5b258c9c41cd6e9cd6a085f65b5b887b365e4dab06',
+          callID: widget.huddleId,
+          userID: user.id,
+          userName: 'Bro',
+          config: config,
+        ),
+      ),
+    );
+  }
 }
 
 class _HuddleMessageBubble extends StatelessWidget {
@@ -503,6 +732,44 @@ class _HuddleMessageBubble extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// --- STATEFUL VOICE MEMBER AVATAR ---
+class _VoiceMemberAvatar extends StatelessWidget {
+  final String userId;
+  const _VoiceMemberAvatar({required this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: Supabase.instance.client.from('profiles').select('username, avatar_url').eq('id', userId).single(),
+      builder: (context, snapshot) {
+        final profile = snapshot.data;
+        final avatarUrl = profile?['avatar_url'];
+        final username = profile?['username'] ?? 'Bro';
+
+        return Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: Tooltip(
+            message: username,
+            child: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF14B8A6), width: 1.5),
+                image: avatarUrl != null 
+                    ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover)
+                    : null,
+              ),
+              child: avatarUrl == null 
+                  ? const Icon(Icons.person, color: Colors.white30, size: 18)
+                  : null,
+            ),
           ),
         );
       },
