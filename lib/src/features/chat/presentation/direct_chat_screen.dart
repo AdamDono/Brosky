@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:record/record.dart';
 import 'package:http/http.dart' as http;
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'voice_call_screen.dart';
 import 'voice_message_bubble.dart';
 
@@ -379,9 +380,19 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
         elevation: 0,
         shape: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF1E293B)), onPressed: () => Navigator.pop(context)),
-        title: Row(
-          children: [
-            Stack(
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PublicProfileScreen(userId: widget.partnerId),
+              ),
+            );
+          },
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            children: [
+              Stack(
               children: [
                 Container(
                   width: 36, height: 36,
@@ -431,6 +442,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
               ],
             ),
           ],
+        ),
         ),
         actions: [
           IconButton(

@@ -1,4 +1,5 @@
 import 'package:bro_app/src/features/chat/presentation/direct_chat_screen.dart';
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -120,9 +121,18 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            Stack(
-              children: [
-                Container(
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PublicProfileScreen(userId: convo['partner_id']),
+                  ),
+                );
+              },
+              child: Stack(
+                children: [
+                  Container(
                   width: 52, height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -155,7 +165,8 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
                   ),
               ],
             ),
-            const SizedBox(width: 16),
+          ),
+          const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
