@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:hugeicons/hugeicons.dart';
 import 'package:bro_app/src/features/notifications/application/notifications_service.dart';
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -493,13 +494,23 @@ class _CommentTileState extends State<_CommentTile> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle, color: const Color(0xFFF1F5F9),
-              image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PublicProfileScreen(userId: widget.comment['user_id']),
+                ),
+              );
+            },
+            child: Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle, color: const Color(0xFFF1F5F9),
+                image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
+              ),
+              child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 20) : null,
             ),
-            child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 20) : null,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -508,7 +519,17 @@ class _CommentTileState extends State<_CommentTile> {
               children: [
                 Row(
                   children: [
-                    Text(username, style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1E293B))),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PublicProfileScreen(userId: widget.comment['user_id']),
+                          ),
+                        );
+                      },
+                      child: Text(username, style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF1E293B))),
+                    ),
                     const SizedBox(width: 8),
                     Text('· ${_formatActualTime(createdAt)}', style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
                   ],
