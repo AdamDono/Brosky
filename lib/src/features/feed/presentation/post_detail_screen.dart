@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:hugeicons/hugeicons.dart';
+import 'package:bro_app/src/features/notifications/application/notifications_service.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -90,6 +91,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           'user_id': user.id,
           'reaction_type': '❤️'
         }, onConflict: 'post_id,user_id');
+
+        NotificationsService.triggerNotification(
+          recipientId: widget.post['user_id'],
+          type: 'post_reaction',
+          referenceId: widget.post['id'],
+        );
       }
     } catch (e) {
       debugPrint('Error reacting: $e');
@@ -112,6 +119,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         'user_id': user.id,
         'content': text,
       });
+
+      NotificationsService.triggerNotification(
+        recipientId: widget.post['user_id'],
+        type: 'post_comment',
+        referenceId: widget.post['id'],
+      );
+
       _commentController.clear();
       FocusScope.of(context).unfocus();
       _fetchStats();

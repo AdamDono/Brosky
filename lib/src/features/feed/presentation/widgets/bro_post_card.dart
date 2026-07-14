@@ -1,6 +1,7 @@
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/post_detail_screen.dart';
+import 'package:bro_app/src/features/notifications/application/notifications_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -104,6 +105,12 @@ class _BroPostCardState extends State<BroPostCard> {
           'user_id': user.id,
           'reaction_type': '❤️'
         }, onConflict: 'post_id,user_id');
+
+        NotificationsService.triggerNotification(
+          recipientId: widget.post['user_id'],
+          type: 'post_reaction',
+          referenceId: widget.post['id'],
+        );
       }
     } catch (e) { 
       debugPrint('Error reacting: $e');

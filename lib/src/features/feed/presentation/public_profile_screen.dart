@@ -2,6 +2,7 @@ import 'package:bro_app/src/features/chat/presentation/direct_chat_screen.dart';
 import 'package:bro_app/src/features/chat/presentation/voice_call_screen.dart';
 
 import 'package:bro_app/src/features/feed/presentation/widgets/bro_post_card.dart';
+import 'package:bro_app/src/features/notifications/application/notifications_service.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,6 +52,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       });
 
       await Supabase.instance.client.from('conversations').insert(newConversation);
+      
+      NotificationsService.triggerNotification(
+        recipientId: otherId,
+        type: 'new_follower',
+        referenceId: myId,
+      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Connection request sent! 👊')));

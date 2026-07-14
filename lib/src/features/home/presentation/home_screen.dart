@@ -5,7 +5,11 @@ import 'package:bro_app/src/features/feed/presentation/feed_screen.dart';
 import 'package:bro_app/src/features/huddles/presentation/huddles_screen.dart';
 import 'package:bro_app/src/features/huddles/presentation/squad_requests_screen.dart';
 import 'package:bro_app/src/features/match/presentation/match_screen.dart';
+import 'package:bro_app/src/features/notifications/presentation/notifications_screen.dart';
 import 'package:bro_app/src/features/profile/presentation/profile_screen.dart';
+import 'package:bro_app/src/features/feed/presentation/post_detail_screen.dart';
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
+import 'package:bro_app/src/features/notifications/presentation/widgets/bro_toast.dart';
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
 import 'package:bro_app/src/features/huddles/presentation/create_huddle_modal.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final Color _primaryColor = const Color(0xFF14B8A6);
   int _pendingRequestCount = 0;
+  int _pendingNotificationCount = 0;
   int _unreadMessagesCount = 0;
   Map<String, dynamic>? _myProfile;
   int _broCount = 0;
@@ -104,6 +109,101 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
         });
+
+    DateTime? lastNotifTime;
+
+    // Listen for notification changes
+    Supabase.instance.client
+        .from('notifications')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', user.id)
+        .listen((data) {
+          final unreadNotifs = data.where((n) => n['is_read'] == false).length;
+          
+          if (lastNotifTime == null) {
+            if (data.isNotEmpty) {
+              lastNotifTime = data.map((n) => DateTime.parse(n['created_at'])).reduce((a, b) => a.isAfter(b) ? a : b);
+            } else {
+              lastNotifTime = DateTime.now().toUtc();
+            }
+          } else {
+            for (var notif in data) {
+              final created = DateTime.parse(notif['created_at']);
+              if (created.isAfter(lastNotifTime!)) {
+                lastNotifTime = created;
+                if (notif['actor_id'] != user.id && notif['type'] != 'direct_message') {
+                  _showNotificationToast(notif);
+                }
+              }
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              _pendingNotificationCount = unreadNotifs;
+            });
+          }
+        });
+  }
+
+  Future<void> _showNotificationToast(Map<String, dynamic> notif) async {
+    final actorId = notif['actor_id'];
+    if (actorId == null) return;
+
+    try {
+      final actorProfile = await Supabase.instance.client
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', actorId)
+          .single();
+
+      final username = actorProfile['username'] ?? 'Someone';
+      final avatarUrl = actorProfile['avatar_url'];
+      final type = notif['type'];
+      
+      String title = 'BRO CONTACT';
+      String message = 'Vibing with you';
+
+      if (type == 'post_reaction') {
+        title = '👊 POST REACTED';
+        message = '@$username liked your post';
+      } else if (type == 'post_comment') {
+        title = '💬 COMMENT POSTED';
+        message = '@$username commented on your post';
+      } else if (type == 'new_follower') {
+        title = '🤝 CONNECT REQUEST';
+        message = '@$username wants to connect with you';
+      }
+
+      if (mounted) {
+        BroToast.show(
+          context,
+          title: title,
+          message: message,
+          avatarUrl: avatarUrl,
+          onTap: () {
+            Supabase.instance.client.from('notifications').update({'is_read': true}).eq('id', notif['id']);
+            
+            if (type == 'post_reaction' || type == 'post_comment') {
+              Supabase.instance.client
+                  .from('posts')
+                  .select()
+                  .eq('id', notif['reference_id'])
+                  .single()
+                  .then((post) {
+                    if (mounted) {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)));
+                    }
+                  });
+            } else if (type == 'new_follower') {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: actorId)));
+            }
+          },
+        );
+      }
+    } catch (e) {
+      debugPrint('Error showing toast: $e');
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -196,7 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01, color: Color(0xFF1A1D21), size: 22),
                   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
-                if (_pendingRequestCount > 0)
+                if (_pendingNotificationCount > 0)
                   Positioned(
                     top: 10, right: 10,
                     child: Container(
@@ -489,13 +589,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNotificationRow() {
-    final hasNotifications = _pendingRequestCount > 0;
+    final hasNotifications = _pendingNotificationCount > 0;
     
     return GestureDetector(
       onTap: () async {
         Navigator.pop(context);
-        await Navigator.push(context, MaterialPageRoute(builder: (_) => const SquadRequestsScreen()));
-        _loadPendingRequests();
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
@@ -532,7 +631,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [BoxShadow(color: _primaryColor.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))],
                 ),
-                child: Text('$_pendingRequestCount', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
+                child: Text('$_pendingNotificationCount', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
               ),
           ],
         ),

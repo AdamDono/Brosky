@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:bro_app/src/features/feed/presentation/post_detail_screen.dart';
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -203,8 +205,32 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               )
             : null,
-        onTap: () => _markAsRead(notif['id']),
+        onTap: () => _handleNotificationTap(notif),
       ),
     );
+  }
+
+  Future<void> _handleNotificationTap(Map<String, dynamic> notif) async {
+    await _markAsRead(notif['id']);
+
+    final type = notif['type'];
+    final actorId = notif['actor_id'];
+
+    if (type == 'post_reaction' || type == 'post_comment') {
+      try {
+        final post = await Supabase.instance.client
+            .from('posts')
+            .select()
+            .eq('id', notif['reference_id'])
+            .single();
+        if (mounted) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)));
+        }
+      } catch (e) {
+        debugPrint('Error navigating to post: $e');
+      }
+    } else if (type == 'new_follower' && actorId != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: actorId)));
+    }
   }
 }
