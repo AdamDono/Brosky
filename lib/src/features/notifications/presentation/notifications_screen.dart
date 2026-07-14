@@ -211,23 +211,61 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _handleNotificationTap(Map<String, dynamic> notif) async {
-    await _markAsRead(notif['id']);
+    debugPrint('*** TAP NOTIFICATION: ${notif['id']} Type: ${notif['type']} Ref: ${notif['reference_id']}');
+    _markAsRead(notif['id']);
 
     final type = notif['type'];
     final actorId = notif['actor_id'];
+    final refId = notif['reference_id'];
 
     if (type == 'post_reaction' || type == 'post_comment') {
       try {
-        final post = await Supabase.instance.client
-            .from('posts')
-            .select()
-            .eq('id', notif['reference_id'])
-            .single();
-        if (mounted) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)));
+        debugPrint('*** RESOLVING POST FROM REF: $refId');
+        Map<String, dynamic>? post;
+
+        try {
+          final res = await Supabase.instance.client
+              .from('bro_posts')
+              .select()
+              .eq('id', refId)
+              .single();
+          post = res;
+        } catch (_) {
+          if (type == 'post_comment') {
+            final comment = await Supabase.instance.client
+                .from('post_comments')
+                .select('post_id')
+                .eq('id', refId)
+                .single();
+            final res = await Supabase.instance.client
+                .from('bro_posts')
+                .select()
+                .eq('id', comment['post_id'])
+                .single();
+            post = res;
+          } else if (type == 'post_reaction') {
+            final reaction = await Supabase.instance.client
+                .from('post_likes')
+                .select('post_id')
+                .eq('id', refId)
+                .single();
+            final res = await Supabase.instance.client
+                .from('bro_posts')
+                .select()
+                .eq('id', reaction['post_id'])
+                .single();
+            post = res;
+          }
+        }
+
+        if (post != null && mounted) {
+          debugPrint('*** NAVIGATING TO POST DETAIL: ${post['id']}');
+          Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(post: post!)));
+        } else {
+          debugPrint('*** RESOLVED POST IS NULL');
         }
       } catch (e) {
-        debugPrint('Error navigating to post: $e');
+        debugPrint('*** ERROR RESOLVING POST: $e');
       }
     } else if (type == 'new_follower' && actorId != null) {
       Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: actorId)));

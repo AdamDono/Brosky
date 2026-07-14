@@ -181,20 +181,52 @@ class _HomeScreenState extends State<HomeScreen> {
           title: title,
           message: message,
           avatarUrl: avatarUrl,
-          onTap: () {
+          onTap: () async {
             Supabase.instance.client.from('notifications').update({'is_read': true}).eq('id', notif['id']);
             
             if (type == 'post_reaction' || type == 'post_comment') {
-              Supabase.instance.client
-                  .from('posts')
-                  .select()
-                  .eq('id', notif['reference_id'])
-                  .single()
-                  .then((post) {
-                    if (mounted) {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)));
-                    }
-                  });
+              try {
+                final refId = notif['reference_id'];
+                Map<String, dynamic>? post;
+
+                try {
+                  post = await Supabase.instance.client
+                      .from('bro_posts')
+                      .select()
+                      .eq('id', refId)
+                      .single();
+                } catch (_) {
+                  if (type == 'post_comment') {
+                    final comment = await Supabase.instance.client
+                        .from('post_comments')
+                        .select('post_id')
+                        .eq('id', refId)
+                        .single();
+                    post = await Supabase.instance.client
+                        .from('bro_posts')
+                        .select()
+                        .eq('id', comment['post_id'])
+                        .single();
+                  } else if (type == 'post_reaction') {
+                    final reaction = await Supabase.instance.client
+                        .from('post_likes')
+                        .select('post_id')
+                        .eq('id', refId)
+                        .single();
+                    post = await Supabase.instance.client
+                        .from('bro_posts')
+                        .select()
+                        .eq('id', reaction['post_id'])
+                        .single();
+                  }
+                }
+
+                if (post != null && mounted) {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(post: post!)));
+                }
+              } catch (e) {
+                debugPrint('Error routing from toast: $e');
+              }
             } else if (type == 'new_follower') {
               Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: actorId)));
             }
