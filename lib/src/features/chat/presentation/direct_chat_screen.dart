@@ -53,6 +53,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   bool _partnerIsTyping = false;
   Timer? _typingDebounce;
   bool _amTyping = false;
+  bool _isBlocked = false;
 
   @override
   void initState() {
@@ -61,6 +62,25 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     _setupMessageListener();
     _setupPartnerPresenceListener();
     _setupPartnerTypingListener();
+    _checkIfBlocked();
+  }
+
+  Future<void> _checkIfBlocked() async {
+    try {
+      final myId = Supabase.instance.client.auth.currentUser?.id;
+      if (myId == null) return;
+      final res = await Supabase.instance.client
+          .from('user_blocks')
+          .select()
+          .or('and(blocker_id.eq.$myId,blocked_user_id.eq.${widget.partnerId}),and(blocker_id.eq.${widget.partnerId},blocked_user_id.eq.$myId)');
+      if (res != null && (res as List).isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _isBlocked = true;
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   void _onTextChanged() {
@@ -914,6 +934,24 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   }
 
   Widget _buildMessageInput() {
+    if (_isBlocked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: context.broColors.card,
+          border: Border(top: BorderSide(color: context.broColors.border, width: 1)),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Text(
+              'You cannot message this user.',
+              style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      );
+    }
+
     const _primaryColor = Color(0xFF14B8A6);
     final isTextEmpty = _messageController.text.trim().isEmpty;
 

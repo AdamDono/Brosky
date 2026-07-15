@@ -67,6 +67,17 @@ class _MatchScreenState extends State<MatchScreen> {
           .eq('user_id', user.id);
       _myHuddles = (myHuddlesRes as List).map((h) => h['huddle_id'].toString()).toList();
 
+      // Fetch blocked user list
+      final blockedRes = await Supabase.instance.client
+          .from('user_blocks')
+          .select('blocker_id, blocked_user_id')
+          .or('blocker_id.eq.${user.id},blocked_user_id.eq.${user.id}');
+      final blockedIds = (blockedRes as List).map<String>((row) {
+        return row['blocker_id'].toString() == user.id
+            ? row['blocked_user_id'].toString()
+            : row['blocker_id'].toString();
+      }).toList();
+
       var query = Supabase.instance.client.from('profiles').select().neq('id', user.id);
       
       if (_selectedVibe != 'ALL') {
@@ -78,6 +89,9 @@ class _MatchScreenState extends State<MatchScreen> {
       List<Map<String, dynamic>> filteredBros = [];
       
       for (var bro in allBros) {
+        final broId = bro['id']?.toString() ?? '';
+        if (blockedIds.contains(broId)) continue;
+
         if (_myPosition != null && bro['last_lat'] != null && bro['last_long'] != null) {
           double distance = LocationService.calculateDistance(
             _myPosition!.latitude, 

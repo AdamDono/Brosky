@@ -14,6 +14,34 @@ class BroDirectScreen extends StatefulWidget {
 }
 
 class _BroDirectScreenState extends State<BroDirectScreen> {
+  List<String> _blockedUserIds = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBlockedUsers();
+  }
+
+  Future<void> _loadBlockedUsers() async {
+    try {
+      final myId = Supabase.instance.client.auth.currentUser?.id;
+      if (myId == null) return;
+      final res = await Supabase.instance.client
+          .from('user_blocks')
+          .select('blocker_id, blocked_user_id')
+          .or('blocker_id.eq.$myId,blocked_user_id.eq.$myId');
+      if (mounted) {
+        setState(() {
+          _blockedUserIds = (res as List).map<String>((row) {
+            return row['blocker_id'].toString() == myId
+                ? row['blocked_user_id'].toString()
+                : row['blocker_id'].toString();
+          }).toList();
+        });
+      }
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
@@ -52,7 +80,9 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
           }
         }
 
-        final convoList = convos.values.toList()
+        final convoList = convos.values
+            .where((c) => !_blockedUserIds.contains(c['partner_id'].toString()))
+            .toList()
           ..sort((a, b) => b['last_message_time'].compareTo(a['last_message_time']));
 
         if (convoList.isEmpty) {

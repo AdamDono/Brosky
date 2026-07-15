@@ -1,4 +1,5 @@
 import 'package:bro_app/src/features/profile/presentation/edit_profile_screen.dart';
+import 'package:bro_app/src/features/profile/presentation/blocked_users_screen.dart';
 import 'package:bro_app/src/features/auth/presentation/auth_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -299,6 +300,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               _buildMenuItem(Icons.workspace_premium, 'Bro Premium', badge: true, onTap: () => _showPremiumSheet()),
               _buildMenuItem(Icons.share, 'Invite Friends', onTap: () => _inviteFriends()),
               _buildMenuItem(Icons.help_outline, 'Help & Support', onTap: () => _openSupport()),
+              _buildMenuItem(Icons.block_rounded, 'Blocked Users', onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (ctx) => const BlockedUsersScreen()));
+              }),
               _buildThemeToggle(),
               
               const SizedBox(height: 24),

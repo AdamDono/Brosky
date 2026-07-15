@@ -27,6 +27,7 @@ class _FeedScreenState extends State<FeedScreen>
   bool _isLoading = true;
   bool _isLoadingMore = false;
   int _postLimit = 20;
+  List<String> _blockedUserIds = [];
 
   final List<String> _vibes = ['ALL', 'STRATEGY', 'GAINS', 'HUSTLE', 'LIFESTYLE', 'VIBES'];
 
@@ -57,6 +58,9 @@ class _FeedScreenState extends State<FeedScreen>
     
     setState(() {
       _displayPosts = _allPosts.where((post) {
+        final authorId = post['user_id']?.toString() ?? '';
+        if (_blockedUserIds.contains(authorId)) return false;
+
         final createdAt = DateTime.tryParse(post['created_at'] ?? '');
         if (createdAt == null) return false;
         
@@ -70,9 +74,26 @@ class _FeedScreenState extends State<FeedScreen>
     });
   }
 
+  Future<void> _loadBlockedUsers() async {
+    try {
+      final myId = Supabase.instance.client.auth.currentUser?.id;
+      if (myId == null) return;
+      final res = await Supabase.instance.client
+          .from('user_blocks')
+          .select('blocker_id, blocked_user_id')
+          .or('blocker_id.eq.$myId,blocked_user_id.eq.$myId');
+      _blockedUserIds = (res as List).map<String>((row) {
+        return row['blocker_id'].toString() == myId
+            ? row['blocked_user_id'].toString()
+            : row['blocker_id'].toString();
+      }).toList();
+    } catch (_) {}
+  }
+
   Future<void> _loadPosts({bool silent = false}) async {
     if (!silent && mounted) setState(() => _isLoading = _allPosts.isEmpty);
     try {
+      await _loadBlockedUsers();
       final res = await Supabase.instance.client
           .from('bro_posts')
           .select()
