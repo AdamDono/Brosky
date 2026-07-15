@@ -51,3 +51,7 @@ app.*.map.json
 
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
+
+# Ignore local APK builds
+*.apk
+
