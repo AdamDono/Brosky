@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'voice_call_screen.dart';
 import 'voice_message_bubble.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class DirectChatScreen extends StatefulWidget {
   final String partnerId;
@@ -506,12 +507,12 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     if (user == null) return const Scaffold(body: Center(child: Text('Not authenticated')));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: context.broColors.bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.broColors.card,
         elevation: 0,
-        shape: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Color(0xFF1E293B)), onPressed: () => Navigator.pop(context)),
+        shape: Border(bottom: BorderSide(color: context.broColors.border, width: 1)),
+        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new, size: 20, color: context.broColors.text), onPressed: () => Navigator.pop(context)),
         title: GestureDetector(
           onTap: () {
             Navigator.push(
@@ -530,11 +531,11 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                   width: 36, height: 36,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFF1F5F9),
+                    color: context.broColors.border,
                     border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
                     image: widget.partnerAvatar != null ? DecorationImage(image: NetworkImage(widget.partnerAvatar!), fit: BoxFit.cover) : null,
                   ),
-                  child: widget.partnerAvatar == null ? const Icon(Icons.person, color: Colors.black26, size: 18) : null,
+                  child: widget.partnerAvatar == null ? Icon(Icons.person, color: context.broColors.subtext, size: 18) : null,
                 ),
                 if (_isPartnerOnline())
                   Positioned(
@@ -546,7 +547,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF14B8A6),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: context.isDark ? context.broColors.card : Colors.white, width: 2),
                       ),
                     ),
                   ),
@@ -559,7 +560,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
               children: [
                 Text(
                   widget.partnerUsername, 
-                  style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF1E293B)),
+                  style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 15, color: context.broColors.text),
                 ),
                 const SizedBox(height: 1),
                 Text(
@@ -568,7 +569,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                     fontFamily: '.SF Pro Display', 
                     fontSize: 10, 
                     fontWeight: FontWeight.w600,
-                    color: _isPartnerOnline() ? const Color(0xFF14B8A6) : const Color(0xFF94A3B8),
+                    color: _isPartnerOnline() ? const Color(0xFF14B8A6) : context.broColors.subtext,
                   ),
                 ),
               ],
@@ -655,8 +656,8 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          color: context.broColors.card,
+          border: Border.all(color: context.broColors.border, width: 1),
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
@@ -693,7 +694,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9),
+            color: context.broColors.inputFill,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(20),
               topRight: const Radius.circular(20),
@@ -701,11 +702,11 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
               bottomRight: Radius.circular(isMe ? 4 : 20),
             ),
           ),
-          child: const Text(
+          child: Text(
             '🚫  This message was removed',
             style: TextStyle(
               fontFamily: '.SF Pro Display',
-              color: Color(0xFF94A3B8),
+              color: context.broColors.subtext,
               fontSize: 13,
               fontStyle: FontStyle.italic,
             ),
@@ -741,7 +742,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(
                   _formatActualTime(createdAt), 
-                  style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 10, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -769,8 +770,8 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
               constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: isMe ? _primaryColor : Colors.white,
-                border: isMe ? null : Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                color: isMe ? _primaryColor : context.broColors.card,
+                border: isMe ? null : Border.all(color: context.broColors.border, width: 1),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(20),
                   topRight: const Radius.circular(20),
@@ -786,7 +787,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                 children: [
                   Text(
                     message['content'] ?? '', 
-                    style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white : const Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
+                    style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white : context.broColors.text, fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -794,7 +795,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                     children: [
                       Text(
                         _formatActualTime(createdAt), 
-                        style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : context.broColors.subtext, fontSize: 10, fontWeight: FontWeight.w500),
                       ),
                       if (isMe) ...[
                         const SizedBox(width: 4),
@@ -827,9 +828,9 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.broColors.card,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          border: Border.all(color: context.broColors.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -919,8 +920,8 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).viewInsets.bottom + 12),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        border: Border(top: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+        color: context.broColors.card, 
+        border: Border(top: BorderSide(color: context.broColors.border, width: 1)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, -4))],
       ),
       child: SafeArea(
@@ -977,14 +978,14 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController, 
-                      style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF1E293B), fontSize: 15), 
+                      style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontSize: 15), 
                       maxLines: null,
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
                         hintText: 'Message...', 
-                        hintStyle: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 15), 
+                        hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 15), 
                         filled: true, 
-                        fillColor: const Color(0xFFF1F5F9), 
+                        fillColor: context.broColors.inputFill, 
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), 
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none)
                       )

@@ -403,8 +403,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+          color: context.broColors.card,
+          border: Border(top: BorderSide(color: context.broColors.border, width: 1)),
         ),
         child: SafeArea(
           child: BottomNavigationBar(
@@ -412,26 +412,26 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: (index) {
             setState(() => _currentIndex = index);
           },
-          backgroundColor: Colors.white,
+          backgroundColor: context.broColors.card,
           selectedItemColor: _primaryColor,
-          unselectedItemColor: const Color(0xFF94A3B8),
+          unselectedItemColor: context.broColors.subtext,
           showSelectedLabels: true,
           showUnselectedLabels: true,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
-          unselectedLabelStyle: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
+          selectedLabelStyle: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+          unselectedLabelStyle: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1),
           items: [
             BottomNavigationBarItem(
-              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedHome01, color: _currentIndex == 0 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedHome01, color: _currentIndex == 0 ? _primaryColor : context.broColors.subtext, size: 22)),
               label: 'FEED',
             ),
             BottomNavigationBarItem(
-              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedRadar01, color: _currentIndex == 1 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedRadar01, color: _currentIndex == 1 ? _primaryColor : context.broColors.subtext, size: 22)),
               label: 'RADAR',
             ),
             BottomNavigationBarItem(
-              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: _currentIndex == 2 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+              icon: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: _currentIndex == 2 ? _primaryColor : context.broColors.subtext, size: 22)),
               label: 'BROHOOD',
             ),
             BottomNavigationBarItem(
@@ -440,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: Text('$_unreadMessagesCount', style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.bold)),
                 backgroundColor: Colors.redAccent,
                 offset: const Offset(5, -5),
-                child: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: _currentIndex == 3 ? _primaryColor : const Color(0xFF94A3B8), size: 22)),
+                child: Padding(padding: const EdgeInsets.only(bottom: 4), child: HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: _currentIndex == 3 ? _primaryColor : context.broColors.subtext, size: 22)),
               ),
               label: 'MESSAGES',
             ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class HuddlesScreen extends StatefulWidget {
   const HuddlesScreen({super.key});
@@ -139,8 +140,8 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 4),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
-              decoration: BoxDecoration(color: isSelected ? _teal : Colors.transparent, borderRadius: BorderRadius.circular(16), border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 1.5)),
-              child: Text(vibe == 'ALL' ? 'ALL' : '#$vibe', style: TextStyle(fontFamily: '.SF Pro Display', color: isSelected ? Colors.white : const Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
+              decoration: BoxDecoration(color: isSelected ? _teal : Colors.transparent, borderRadius: BorderRadius.circular(16), border: Border.all(color: isSelected ? _teal : context.broColors.border, width: 1.5)),
+              child: Text(vibe == 'ALL' ? 'ALL' : '#$vibe', style: TextStyle(fontFamily: '.SF Pro Display', color: isSelected ? Colors.white : context.broColors.subtext, fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1)),
             ),
           );
         },
@@ -155,7 +156,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
         height: 44,
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+          color: context.broColors.inputFill,
           borderRadius: BorderRadius.circular(22),
         ),
         child: Row(
@@ -165,12 +166,12 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                 onTap: () => setState(() => _showJoined = true),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: _showJoined ? Colors.white : Colors.transparent,
+                    color: _showJoined ? context.broColors.card : Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: _showJoined ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))] : [],
                   ),
                   alignment: Alignment.center,
-                  child: Text('JOINED', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: _showJoined ? FontWeight.w800 : FontWeight.w600, color: _showJoined ? const Color(0xFF1E293B) : const Color(0xFF94A3B8))),
+                  child: Text('JOINED', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: _showJoined ? FontWeight.w800 : FontWeight.w600, color: _showJoined ? context.broColors.text : context.broColors.subtext)),
                 )
               )
             ),
@@ -179,12 +180,12 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                 onTap: () => setState(() => _showJoined = false),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: !_showJoined ? Colors.white : Colors.transparent,
+                    color: !_showJoined ? context.broColors.card : Colors.transparent,
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: !_showJoined ? [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))] : [],
                   ),
                   alignment: Alignment.center,
-                  child: Text('DISCOVER', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: !_showJoined ? FontWeight.w800 : FontWeight.w600, color: !_showJoined ? const Color(0xFF1E293B) : const Color(0xFF94A3B8))),
+                  child: Text('DISCOVER', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 12, fontWeight: !_showJoined ? FontWeight.w800 : FontWeight.w600, color: !_showJoined ? context.broColors.text : context.broColors.subtext)),
                 )
               )
             ),
@@ -225,11 +226,11 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(name, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF1E293B))),
+                            Text(name, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 16, color: context.broColors.text)),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: isPublic ? _teal.withOpacity(0.1) : Colors.black.withOpacity(0.05), borderRadius: BorderRadius.circular(6)),
-                              child: Text(isPublic ? 'OPEN' : 'RESTRICTED', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 9, fontWeight: FontWeight.w700, color: isPublic ? _teal : Colors.black38, letterSpacing: 0.3)),
+                              decoration: BoxDecoration(color: isPublic ? _teal.withOpacity(0.1) : context.broColors.border, borderRadius: BorderRadius.circular(6)),
+                              child: Text(isPublic ? 'OPEN' : 'RESTRICTED', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 9, fontWeight: FontWeight.w700, color: isPublic ? _teal : context.broColors.subtext, letterSpacing: 0.3)),
                             ),
                           ],
                         ),
@@ -243,11 +244,11 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                               child: Row(mainAxisSize: MainAxisSize.min, children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: Color(0xFF14B8A6), size: 10), const SizedBox(width: 4), Text('$mutualCount BROS IN SQUAD', style: TextStyle(fontFamily: '.SF Pro Display', color: _teal, fontWeight: FontWeight.w700, fontSize: 9, letterSpacing: 0.3))]),
                             ),
                           ),
-                        Text(bio, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: const Color(0xFF64748B), height: 1.4)),
+                        Text(bio, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: context.broColors.subtext, height: 1.4)),
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: Colors.black.withOpacity(0.03), borderRadius: BorderRadius.circular(10)), child: Row(children: [const HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: Color(0xFF64748B), size: 14), const SizedBox(width: 6), Text('$memberCount TOTAL', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w700, color: const Color(0xFF64748B), letterSpacing: 0.3))])),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: context.broColors.border, borderRadius: BorderRadius.circular(10)), child: Row(children: [HugeIcon(icon: HugeIcons.strokeRoundedUserGroup, color: context.broColors.subtext, size: 14), const SizedBox(width: 6), Text('$memberCount TOTAL', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w700, color: context.broColors.subtext, letterSpacing: 0.3))])),
                             const Spacer(),
                             GestureDetector(
                                 onTap: () {
@@ -262,16 +263,16 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10), 
                                   decoration: BoxDecoration(
                                     color: (isPublic || isJoined)
-                                        ? Colors.white
+                                        ? context.broColors.card
                                         : hasPendingRequest
-                                            ? const Color(0xFFF1F5F9) // grayed
+                                            ? context.broColors.inputFill // grayed
                                             : _teal,
                                     borderRadius: BorderRadius.circular(16), 
                                     border: Border.all(
                                       color: (isPublic || isJoined)
-                                          ? const Color(0xFFF1F5F9)
+                                          ? context.broColors.border
                                           : hasPendingRequest
-                                              ? const Color(0xFFE2E8F0)
+                                              ? context.broColors.border
                                               : _teal,
                                       width: 1.5,
                                     ),
@@ -286,9 +287,9 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                                                 : 'REQUEST', 
                                         style: TextStyle(fontFamily: '.SF Pro Display', 
                                           color: (isPublic || isJoined)
-                                              ? const Color(0xFF1E293B)
+                                              ? context.broColors.text
                                               : hasPendingRequest
-                                                  ? Colors.black26
+                                                  ? context.broColors.subtext.withOpacity(0.5)
                                                   : Colors.white,
                                           fontWeight: FontWeight.w900,
                                           fontSize: 11,
@@ -302,7 +303,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                                               ? HugeIcons.strokeRoundedArrowRight01
                                               : HugeIcons.strokeRoundedLockPassword, 
                                           color: (isPublic || isJoined)
-                                              ? const Color(0xFF1E293B)
+                                              ? context.broColors.text
                                               : Colors.white, 
                                           size: 14,
                                         ),
@@ -319,7 +320,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+            Divider(height: 1, thickness: 1, color: context.broColors.border),
           ],
         );
       }
