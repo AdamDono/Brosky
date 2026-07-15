@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -123,8 +124,8 @@ class _FeedScreenState extends State<FeedScreen>
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+            color: context.broColors.card,
+            border: Border(bottom: BorderSide(color: context.broColors.border, width: 1)),
           ),
           child: Column(
             children: [
@@ -133,20 +134,20 @@ class _FeedScreenState extends State<FeedScreen>
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: context.broColors.inputFill,
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: TextField(
                     controller: _searchController,
                     textAlignVertical: TextAlignVertical.center,
                     onChanged: (_) => _applyFilters(),
-                    style: const TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w500, color: Color(0xFF1A1D21), fontSize: 14),
-                    decoration: const InputDecoration(
+                    style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w500, color: context.broColors.text, fontSize: 14),
+                    decoration: InputDecoration(
                       hintText: 'Search the Brohood',
-                      hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w400),
+                      hintStyle: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 14, fontWeight: FontWeight.w400),
                       prefixIcon: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 14),
-                        child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, color: Color(0xFF64748B), size: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: HugeIcon(icon: HugeIcons.strokeRoundedSearch01, color: context.broColors.subtext, size: 18),
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -177,13 +178,13 @@ class _FeedScreenState extends State<FeedScreen>
                         decoration: BoxDecoration(
                           color: isSelected ? const Color(0xFF14B8A6) : Colors.transparent,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isSelected ? const Color(0xFF14B8A6) : const Color(0xFFF1F5F9), width: 1.5),
+                          border: Border.all(color: isSelected ? const Color(0xFF14B8A6) : context.broColors.border, width: 1.5),
                         ),
                         child: Text(
                           vibe == 'ALL' ? 'ALL' : '#$vibe',
                           style: TextStyle(
                             fontFamily: '.SF Pro Display', 
-                            color: isSelected ? Colors.white : const Color(0xFF64748B),
+                            color: isSelected ? Colors.white : context.broColors.subtext,
                             fontSize: 11,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                             letterSpacing: 0.5,

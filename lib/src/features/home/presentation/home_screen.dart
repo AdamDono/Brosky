@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -307,16 +308,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white, // --- FLAT BOUTIQUE PURE WHITE ---
+      backgroundColor: context.broColors.bg,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(65),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+            color: context.broColors.card,
+            border: Border(bottom: BorderSide(color: context.broColors.border, width: 1)),
           ),
           child: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: context.broColors.card,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             centerTitle: true,
@@ -325,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.center,
               children: [
                 IconButton(
-                  icon: const HugeIcon(icon: HugeIcons.strokeRoundedMenu01, color: Color(0xFF1A1D21), size: 22),
+                  icon: HugeIcon(icon: HugeIcons.strokeRoundedMenu01, color: context.broColors.text, size: 22),
                   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 ),
                 if (_pendingNotificationCount > 0)
@@ -344,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.w800, 
                 letterSpacing: 2.0, 
                 fontSize: 16, 
-                color: const Color(0xFF1A1D21)
+                color: context.broColors.text
               ),
             ),
             actions: [
@@ -363,13 +364,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 36,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFF1F5F9),
+                          color: context.broColors.border,
                           border: Border.all(color: Colors.black.withOpacity(0.04), width: 1),
                           image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
                         ),
-                        child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.black26, size: 18) : null,
+                        child: avatarUrl == null ? HugeIcon(icon: HugeIcons.strokeRoundedUser, color: context.broColors.subtext, size: 18) : null,
                       );
-                    }
+                    },
                   ),
                 ),
               ),
@@ -462,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: context.broColors.card,
       width: MediaQuery.of(context).size.width * 0.78,
       elevation: 0,
       child: SafeArea(
@@ -481,11 +482,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 48, height: 48,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFFF1F5F9),
+                        color: context.broColors.border,
                         border: Border.all(color: _primaryColor.withOpacity(0.25), width: 1.5),
                         image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
                       ),
-                      child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Colors.black26, size: 22) : null,
+                      child: avatarUrl == null ? HugeIcon(icon: HugeIcons.strokeRoundedUser, color: context.broColors.subtext, size: 22) : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -495,21 +496,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Text(
                           username,
-                          style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B)),
+                          style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, fontWeight: FontWeight.w800, color: context.broColors.text),
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                         ),
                         if (bio != null && bio.isNotEmpty) ...[
                           const SizedBox(height: 1),
-                          Text(bio, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(bio, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: context.broColors.subtext, fontWeight: FontWeight.w400), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ],
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: Colors.black26, size: 18),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: HugeIcon(icon: HugeIcons.strokeRoundedCancel01, color: context.broColors.subtext, size: 18),
                     ),
                   ),
                 ],
@@ -522,11 +523,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 '$_broCount Bros  ·  $_huddleCount Squads',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: Colors.black38, fontWeight: FontWeight.w500),
+                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 13, color: context.broColors.subtext, fontWeight: FontWeight.w500),
               ),
             ),
 
-            Container(height: 1, color: Colors.black.withOpacity(0.05)),
+            Container(height: 1, color: context.broColors.border),
 
             // ── NAVIGATION ─────────────────────────────────────────
             Expanded(
@@ -558,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             // ── FOOTER ─────────────────────────────────────────────
-            Container(height: 1, color: Colors.black.withOpacity(0.05)),
+            Container(height: 1, color: context.broColors.border),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
               child: GestureDetector(
@@ -595,7 +596,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             HugeIcon(
               icon: icon,
-              color: isSelected ? _primaryColor : const Color(0xFF94A3B8),
+              color: isSelected ? _primaryColor : context.broColors.subtext,
               size: 19,
             ),
             const SizedBox(width: 12),
@@ -604,7 +605,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(fontFamily: '.SF Pro Display', 
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? _primaryColor : const Color(0xFF334155),
+                color: isSelected ? _primaryColor : context.broColors.text,
               ),
             ),
             if (isSelected) ...[
@@ -641,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             HugeIcon(
               icon: HugeIcons.strokeRoundedNotification01, 
-              color: hasNotifications ? _primaryColor : const Color(0xFF94A3B8), 
+              color: hasNotifications ? _primaryColor : context.broColors.subtext, 
               size: 19,
             ),
             const SizedBox(width: 12),
@@ -651,7 +652,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 15, 
                   fontWeight: hasNotifications ? FontWeight.w700 : FontWeight.w500, 
-                  color: hasNotifications ? _primaryColor : const Color(0xFF334155),
+                  color: hasNotifications ? _primaryColor : context.broColors.text,
                 ),
               ),
             ),

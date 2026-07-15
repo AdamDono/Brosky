@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class BroDirectScreen extends StatefulWidget {
   const BroDirectScreen({super.key});
@@ -19,7 +20,7 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
     if (user == null) return const Center(child: Text('Please login'));
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.broColors.bg,
       body: StreamBuilder<List<Map<String, dynamic>>>(
         stream: Supabase.instance.client
             .from('direct_messages')
@@ -38,42 +39,35 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
           final partnerId = isFromMe ? msg['receiver_id'] : msg['sender_id'];
           
           if (!convos.containsKey(partnerId)) {
+            final partnerData = isFromMe ? msg['receiver'] : msg['sender'];
             convos[partnerId] = {
               'partner_id': partnerId,
-              'content': msg['content'],
-              'created_at': msg['created_at'],
+              'partner_username': partnerData?['username'] ?? 'Bro',
+              'partner_avatar': partnerData?['avatar_url'],
+              'partner_last_seen': partnerData?['last_seen_at'],
+              'last_message': msg['content'],
+              'last_message_time': msg['created_at'],
               'is_from_me': isFromMe,
             };
           }
         }
 
-        final conversations = convos.values.toList();
+        final convoList = convos.values.toList()
+          ..sort((a, b) => b['last_message_time'].compareTo(a['last_message_time']));
 
-        if (conversations.isEmpty) return _buildEmptyState();
+        if (convoList.isEmpty) {
+          return _buildEmptyState();
+        }
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: conversations.length,
-            separatorBuilder: (context, index) => Divider(height: 1, color: Colors.black.withOpacity(0.04), indent: 76),
-            itemBuilder: (context, index) {
-              final convo = conversations[index];
-              return FutureBuilder<Map<String, dynamic>>(
-                future: Supabase.instance.client.from('profiles').select('username, avatar_url, last_seen_at').eq('id', convo['partner_id']).single(),
-                builder: (context, profSnap) {
-                  final profile = profSnap.data;
-                  return _buildConversationCard({
-                    ...convo,
-                    'partner_username': profile?['username'] ?? 'Bro',
-                    'partner_avatar': profile?['avatar_url'],
-                    'partner_last_seen': profile?['last_seen_at'],
-                    'last_message': convo['content'],
-                    'last_message_time': convo['created_at'],
-                  });
-                },
-              );
-            },
-          );
-        },
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: convoList.length,
+          itemBuilder: (context, index) {
+            final convo = convoList[index];
+            return _buildConversationCard(convo);
+          },
+        );
+      },
       ),
     );
   }
@@ -83,18 +77,18 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.chat_bubble_outline, size: 56, color: Color(0xFFE2E8F0)),
+          Icon(Icons.chat_bubble_outline, size: 56, color: context.broColors.border),
           const SizedBox(height: 16),
           Text(
             'No conversations yet, Bro.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF1E293B), fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'Start a direct chat from a profile.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14),
+            style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 14),
           ),
         ],
       ),
@@ -136,11 +130,11 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
                   width: 52, height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFF8FAFC),
+                    color: context.broColors.border,
                     border: Border.all(color: Colors.black.withOpacity(0.05), width: 1),
                     image: convo['partner_avatar'] != null ? DecorationImage(image: NetworkImage(convo['partner_avatar']), fit: BoxFit.cover) : null,
                   ),
-                  child: convo['partner_avatar'] == null ? const Icon(Icons.person, color: Colors.black26, size: 24) : null,
+                  child: convo['partner_avatar'] == null ? Icon(Icons.person, color: context.broColors.subtext, size: 24) : null,
                 ),
                 if (_isPartnerOnline(convo['partner_last_seen']))
                   Positioned(
@@ -152,7 +146,7 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF14B8A6),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
+                        border: Border.all(color: context.isDark ? context.broColors.card : Colors.white, width: 2.5),
                         boxShadow: [
                           BoxShadow(
                             color: const Color(0xFF14B8A6).withOpacity(0.4),
@@ -176,11 +170,11 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
                     children: [
                       Text(
                         convo['partner_username'],
-                        style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, color: const Color(0xFF1E293B), fontSize: 16),
+                        style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, color: context.broColors.text, fontSize: 16),
                       ),
                       Text(
                         timeago.format(lastMessageTime, locale: 'en_short'),
-                        style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 12, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -190,7 +184,7 @@ class _BroDirectScreenState extends State<BroDirectScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontFamily: '.SF Pro Display', 
-                      color: convo['is_from_me'] ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      color: convo['is_from_me'] ? context.broColors.subtext : (context.isDark ? Colors.white70 : const Color(0xFF64748B)),
                       fontSize: 14,
                       fontWeight: convo['is_from_me'] ? FontWeight.w400 : FontWeight.w500,
                     ),
