@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:hugeicons/hugeicons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,6 +24,12 @@ class _CreatePostModalState extends State<CreatePostModal> {
   bool _isPosting = false;
   final Color _teal = const Color(0xFF14B8A6);
 
+  // Location check-in
+  String? _locationLabel;
+  double? _locationLat;
+  double? _locationLng;
+  bool _isFetchingLocation = false;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +41,42 @@ class _CreatePostModalState extends State<CreatePostModal> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (image != null) setState(() => _selectedImage = image);
+  }
+
+  Future<void> _fetchLocation() async {
+    setState(() => _isFetchingLocation = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever || permission == LocationPermission.denied) {
+        if (mounted) setState(() => _isFetchingLocation = false);
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
+      _locationLat = position.latitude;
+      _locationLng = position.longitude;
+
+      // Reverse geocode via Nominatim
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json',
+      );
+      final response = await http.get(url, headers: {'User-Agent': 'BroskyApp/1.0'});
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final address = data['address'] as Map<String, dynamic>? ?? {};
+        final city = address['city'] ?? address['town'] ?? address['village'] ?? address['county'] ?? '';
+        final country = address['country'] ?? '';
+        final label = [city, country].where((s) => s.toString().isNotEmpty).join(', ');
+        if (mounted) setState(() => _locationLabel = label.isEmpty ? 'Unknown location' : label);
+      }
+    } catch (e) {
+      debugPrint('Location error: $e');
+    } finally {
+      if (mounted) setState(() => _isFetchingLocation = false);
+    }
   }
 
   Future<void> _submitPost() async {
@@ -68,6 +113,9 @@ class _CreatePostModalState extends State<CreatePostModal> {
           'user_id': user.id,
           'content': content,
           'image_url': imageUrl,
+          if (_locationLabel != null) 'location_label': _locationLabel,
+          if (_locationLat != null) 'location_lat': _locationLat,
+          if (_locationLng != null) 'location_lng': _locationLng,
         });
       }
 
@@ -119,6 +167,33 @@ class _CreatePostModalState extends State<CreatePostModal> {
             ),
           ),
           const SizedBox(height: 16),
+          // Location chip (shown when location is attached)
+          if (_locationLabel != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: _teal.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _teal.withOpacity(0.3), width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_on, color: _teal, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    _locationLabel!,
+                    style: TextStyle(fontFamily: '.SF Pro Display', color: _teal, fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 6),
+                  GestureDetector(
+                    onTap: () => setState(() { _locationLabel = null; _locationLat = null; _locationLng = null; }),
+                    child: Icon(Icons.close, color: _teal, size: 14),
+                  ),
+                ],
+              ),
+            ),
           if (_selectedImage != null || (isEdit && widget.existingPost!['image_url'] != null))
             Stack(
               children: [
@@ -154,6 +229,14 @@ class _CreatePostModalState extends State<CreatePostModal> {
               IconButton(
                 onPressed: _pickImage,
                 icon: HugeIcon(icon: HugeIcons.strokeRoundedImageAdd01, color: _selectedImage != null ? _teal : Colors.black26, size: 28),
+              ),
+              // Location pin button
+              IconButton(
+                onPressed: _isFetchingLocation ? null : _fetchLocation,
+                icon: _isFetchingLocation
+                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: _teal))
+                    : Icon(Icons.location_on_outlined, color: _locationLabel != null ? _teal : Colors.black26, size: 26),
+                tooltip: 'Add Location',
               ),
               const Spacer(),
               ElevatedButton(

@@ -48,16 +48,81 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
   StreamSubscription? _partnerPresenceSubscription;
   String? _partnerLastSeen;
 
+  // Typing indicator state
+  bool _partnerIsTyping = false;
+  Timer? _typingDebounce;
+  bool _amTyping = false;
+
   @override
   void initState() {
     super.initState();
     _messageController.addListener(_onTextChanged);
     _setupMessageListener();
     _setupPartnerPresenceListener();
+    _setupPartnerTypingListener();
   }
 
   void _onTextChanged() {
     if (mounted) setState(() {});
+    _broadcastTyping();
+  }
+
+  Future<void> _broadcastTyping() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    if (!_amTyping) {
+      _amTyping = true;
+      try {
+        await Supabase.instance.client
+            .from('profiles')
+            .update({'typing_with': widget.partnerId})
+            .eq('id', user.id);
+      } catch (_) {}
+    }
+    _typingDebounce?.cancel();
+    _typingDebounce = Timer(const Duration(seconds: 2), () async {
+      _amTyping = false;
+      try {
+        await Supabase.instance.client
+            .from('profiles')
+            .update({'typing_with': null})
+            .eq('id', user.id);
+      } catch (_) {}
+    });
+  }
+
+  Future<void> _clearTyping() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    _typingDebounce?.cancel();
+    _amTyping = false;
+    try {
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'typing_with': null})
+          .eq('id', user.id);
+    } catch (_) {}
+  }
+
+  void _setupPartnerTypingListener() {
+    Supabase.instance.client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .listen((data) {
+          if (!mounted) return;
+          final partner = data.firstWhere(
+            (p) => p['id'] == widget.partnerId,
+            orElse: () => <String, dynamic>{},
+          );
+          if (partner.isNotEmpty) {
+            final typingWith = partner['typing_with'];
+            final myId = Supabase.instance.client.auth.currentUser?.id;
+            final isTypingToMe = typingWith == myId;
+            if (_partnerIsTyping != isTypingToMe && mounted) {
+              setState(() => _partnerIsTyping = isTypingToMe);
+            }
+          }
+        });
   }
 
   void _setupPartnerPresenceListener() {
@@ -142,6 +207,8 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
 
   @override
   void dispose() {
+    _clearTyping();
+    _typingDebounce?.cancel();
     _messageSubscription?.cancel();
     _partnerPresenceSubscription?.cancel();
     _messageController.removeListener(_onTextChanged);
@@ -158,6 +225,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
     setState(() => _isSending = true);
+    _clearTyping();
     try {
       await Supabase.instance.client.from('direct_messages').insert({
         'sender_id': user.id,
@@ -171,6 +239,70 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
+  }
+
+  Future<void> _deleteMessage(String messageId) async {
+    try {
+      await Supabase.instance.client
+          .from('direct_messages')
+          .update({'is_deleted': true})
+          .eq('id', messageId);
+    } catch (e) {
+      debugPrint('Error deleting message: $e');
+    }
+  }
+
+  void _showDeleteSheet(String messageId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2)),
+            ),
+            const Text('Delete Message', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+            const SizedBox(height: 8),
+            const Text('This message will be removed for everyone.', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 14)),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _deleteMessage(messageId);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text('Delete', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w700, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 15)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _startRecording() async {
@@ -477,9 +609,12 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6)))
                 : ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    itemCount: _messages.length + (_partnerIsTyping ? 1 : 0),
                     itemBuilder: (ctx, idx) {
+                      if (_partnerIsTyping && idx == _messages.length) {
+                        return _buildTypingBubble();
+                      }
                       final msg = _messages[idx];
                       final isMe = msg['sender_id'] == user.id;
                       return _buildMessageBubble(msg, isMe);
@@ -513,10 +648,72 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     }
   }
 
+  Widget _buildTypingBubble() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(20),
+          ),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TypingDot(delay: 0),
+            const SizedBox(width: 4),
+            _TypingDot(delay: 150),
+            const SizedBox(width: 4),
+            _TypingDot(delay: 300),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe) {
+    final isDeleted = message['is_deleted'] == true;
     final createdAt = DateTime.parse(message['created_at']);
     const _primaryColor = Color(0xFF14B8A6);
-    
+    final isRead = message['is_read'] == true;
+
+    // Deleted message placeholder
+    if (isDeleted) {
+      return Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(20),
+              topRight: const Radius.circular(20),
+              bottomLeft: Radius.circular(isMe ? 20 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 20),
+            ),
+          ),
+          child: const Text(
+            '🚫  This message was removed',
+            style: TextStyle(
+              fontFamily: '.SF Pro Display',
+              color: Color(0xFF94A3B8),
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      );
+    }
+
     final content = message['content'] as String? ?? '';
     if (content.startsWith('[voice_note]')) {
       final audioUrl = content.substring('[voice_note]'.length);
@@ -560,7 +757,13 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
         children: [
           GestureDetector(
             onDoubleTap: () => _toggleDefaultReaction(message),
-            onLongPress: () => _showReactionPicker(message),
+            onLongPress: () {
+              if (isMe) {
+                _showDeleteSheet(message['id']);
+              } else {
+                _showReactionPicker(message);
+              }
+            },
             child: Container(
               margin: const EdgeInsets.only(bottom: 12),
               constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
@@ -586,9 +789,24 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                     style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white : const Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    _formatActualTime(createdAt), 
-                    style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatActualTime(createdAt), 
+                        style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+                      ),
+                      if (isMe) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          isRead ? Icons.done_all : Icons.done,
+                          size: 12,
+                          color: isRead
+                              ? const Color(0xFFB2F0EC)
+                              : Colors.white.withOpacity(0.6),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -801,6 +1019,60 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+/// Animated bouncing dot for the typing indicator bubble.
+class _TypingDot extends StatefulWidget {
+  final int delay;
+  const _TypingDot({required this.delay});
+
+  @override
+  State<_TypingDot> createState() => _TypingDotState();
+}
+
+class _TypingDotState extends State<_TypingDot> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))
+      ..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0, end: -6).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+    Future.delayed(Duration(milliseconds: widget.delay), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (_, __) => Transform.translate(
+        offset: Offset(0, _animation.value),
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: const Color(0xFF94A3B8),
+            shape: BoxShape.circle,
+          ),
+        ),
       ),
     );
   }

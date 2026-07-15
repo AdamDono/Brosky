@@ -319,6 +319,25 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 widget.post['content'] ?? '', 
                 style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, height: 1.4, color: Color(0xFF0F172A), fontWeight: FontWeight.w500, letterSpacing: -0.2)
               ),
+              if (widget.post['location_label'] != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Color(0xFF14B8A6)),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.post['location_label'],
+                      style: const TextStyle(
+                        fontFamily: '.SF Pro Display',
+                        fontSize: 13,
+                        color: Color(0xFF14B8A6),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               if (widget.post['image_url'] != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 20),

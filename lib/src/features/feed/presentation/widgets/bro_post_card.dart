@@ -291,6 +291,25 @@ class _BroPostCardState extends State<BroPostCard> {
                                 widget.post['content'] ?? '', 
                                 style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: Color(0xFF1E293B), fontWeight: FontWeight.w400)
                               ),
+                              if (widget.post['location_label'] != null) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.location_on, size: 13, color: Color(0xFF14B8A6)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      widget.post['location_label'],
+                                      style: const TextStyle(
+                                        fontFamily: '.SF Pro Display',
+                                        fontSize: 12,
+                                        color: Color(0xFF14B8A6),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               if (widget.post['image_url'] != null) ...[
                                 const SizedBox(height: 12),
                                 Container(
