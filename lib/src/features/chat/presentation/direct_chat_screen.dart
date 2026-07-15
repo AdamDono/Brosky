@@ -527,7 +527,18 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
           child: Column(
             crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
-              VoiceMessageBubble(audioUrl: audioUrl, isMe: isMe),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onDoubleTap: () => _toggleDefaultReaction(message),
+                    onLongPress: () => _showReactionPicker(message),
+                    child: VoiceMessageBubble(audioUrl: audioUrl, isMe: isMe),
+                  ),
+                  if (message['reaction'] != null)
+                    _buildReactionBadge(message['reaction'] as String, isMe),
+                ],
+              ),
               const SizedBox(height: 4),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -544,34 +555,140 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isMe ? _primaryColor : Colors.white,
-          border: isMe ? null : Border.all(color: const Color(0xFFE2E8F0), width: 1),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isMe ? 20 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 20),
-          ),
-          boxShadow: isMe ? [BoxShadow(color: _primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))] : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Text(
-              message['content'] ?? '', 
-              style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white : const Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GestureDetector(
+            onDoubleTap: () => _toggleDefaultReaction(message),
+            onLongPress: () => _showReactionPicker(message),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isMe ? _primaryColor : Colors.white,
+                border: isMe ? null : Border.all(color: const Color(0xFFE2E8F0), width: 1),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isMe ? 20 : 4),
+                  bottomRight: Radius.circular(isMe ? 4 : 20),
+                ),
+                boxShadow: isMe 
+                  ? [BoxShadow(color: _primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))] 
+                  : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 5, offset: const Offset(0, 2))],
+              ),
+              child: Column(
+                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message['content'] ?? '', 
+                    style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white : const Color(0xFF1E293B), fontSize: 15, fontWeight: FontWeight.w400, height: 1.4),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _formatActualTime(createdAt), 
+                    style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              _formatActualTime(createdAt), 
-              style: TextStyle(fontFamily: '.SF Pro Display', color: isMe ? Colors.white.withOpacity(0.7) : const Color(0xFF94A3B8), fontSize: 10, fontWeight: FontWeight.w500),
+          ),
+          if (message['reaction'] != null)
+            _buildReactionBadge(message['reaction'] as String, isMe),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReactionBadge(String reaction, bool isMe) {
+    return Positioned(
+      bottom: 2,
+      right: isMe ? 12 : null,
+      left: isMe ? null : 12,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
           ],
+        ),
+        child: Text(
+          reaction,
+          style: const TextStyle(fontSize: 11),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setReaction(String messageId, String? reaction) async {
+    try {
+      await Supabase.instance.client
+          .from('direct_messages')
+          .update({'reaction': reaction})
+          .eq('id', messageId);
+    } catch (e) {
+      debugPrint('Error setting reaction: $e');
+    }
+  }
+
+  Future<void> _toggleDefaultReaction(Map<String, dynamic> message) async {
+    final currentReaction = message['reaction'];
+    if (currentReaction == '👊') {
+      await _setReaction(message['id'], null);
+    } else {
+      await _setReaction(message['id'], '👊');
+    }
+  }
+
+  void _showReactionPicker(Map<String, dynamic> message) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.2),
+      builder: (context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: const Color(0xFF14B8A6).withOpacity(0.5), width: 1.5),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 8)),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: ['👊', '🔥', '💯', '❤️', '😂', '😮'].map((emoji) {
+                final isSelected = message['reaction'] == emoji;
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (isSelected) {
+                      _setReaction(message['id'], null);
+                    } else {
+                      _setReaction(message['id'], emoji);
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 26),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
         ),
       ),
     );
