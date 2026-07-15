@@ -9,8 +9,6 @@ import 'package:bro_app/src/features/onboarding/presentation/intro_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:bro_app/src/core/theme/theme_provider.dart';
 import 'package:bro_app/src/core/theme/app_theme.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:bro_app/src/core/services/push_notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,13 +17,6 @@ Future<void> main() async {
     url: 'https://pgrtiirtkoaxnpnybmuw.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncnRpaXJ0a29heG5wbnlibXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MjY0ODcsImV4cCI6MjA4NjAwMjQ4N30.uZhiTWtKjCpT8eAaiHuX0f_3S2bD3uQyUc0feINw948',
   );
-
-  try {
-    await Firebase.initializeApp();
-    await PushNotificationService().initialize();
-  } catch (e) {
-    debugPrint('*** Firebase initialization bypassed (awaiting credentials file): $e');
-  }
 
   runApp(
     const ProviderScope(
