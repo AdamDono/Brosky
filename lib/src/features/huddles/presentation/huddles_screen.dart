@@ -75,7 +75,7 @@ class _HuddlesScreenState extends State<HuddlesScreen> {
     return Column(
       children: [
         Container(
-          decoration: BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1))),
+          decoration: BoxDecoration(color: context.broColors.card, border: Border(bottom: BorderSide(color: context.broColors.border, width: 1))),
           child: Column(
             children: [
               _buildVibeSelector(),

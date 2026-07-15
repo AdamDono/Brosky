@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:bro_app/src/features/feed/presentation/post_detail_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -97,16 +98,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: context.broColors.bg,
       appBar: AppBar(
-        title: const Text('Notifications', style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF1E293B), fontWeight: FontWeight.bold)),
+        title: Text('Notifications', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
+        iconTheme: IconThemeData(color: context.broColors.text),
         actions: [
           IconButton(
             onPressed: _loadNotifications,
-            icon: const Icon(Icons.refresh, color: Color(0xFF1E293B)),
+            icon: Icon(Icons.refresh, color: context.broColors.text),
           ),
         ],
       ),
@@ -130,12 +131,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.notifications_none, size: 64, color: Colors.black12),
+          Icon(Icons.notifications_none, size: 64, color: context.broColors.border),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No notifications yet, Bro.\nStay active to get updates!',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 16),
+            style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 16),
           ),
         ],
       ),
@@ -150,10 +151,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.broColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isRead ? Colors.black.withOpacity(0.04) : const Color(0xFF14B8A6).withOpacity(0.4),
+          color: isRead ? context.broColors.border : const Color(0xFF14B8A6).withOpacity(0.4),
           width: 1.5,
         ),
         boxShadow: [
@@ -170,26 +171,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: const Color(0xFFF1F5F9),
+              backgroundColor: context.broColors.border,
               backgroundImage: actorAvatar != null ? NetworkImage(actorAvatar) : null,
-              child: actorAvatar == null ? const Icon(Icons.person, color: Color(0xFF94A3B8)) : null,
+              child: actorAvatar == null ? Icon(Icons.person, color: context.broColors.subtext) : null,
             ),
             Positioned(
               bottom: 0,
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: context.broColors.card,
                   shape: BoxShape.circle,
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(color: Colors.black12, blurRadius: 2),
                   ],
                 ),
                 child: Icon(
                   _getNotificationIcon(notif['type']),
                   size: 11,
-                  color: const Color(0xFF1E293B),
+                  color: context.broColors.text,
                 ),
               ),
             ),
@@ -199,13 +200,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           _getNotificationText(notif),
           style: TextStyle(
             fontFamily: '.SF Pro Display', 
-            color: const Color(0xFF1E293B),
+            color: context.broColors.text,
             fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
           ),
         ),
         subtitle: Text(
           timeago.format(createdAt),
-          style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          style: TextStyle(color: context.broColors.subtext, fontSize: 12),
         ),
         trailing: !isRead
             ? Container(

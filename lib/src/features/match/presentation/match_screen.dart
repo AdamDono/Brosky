@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hugeicons/hugeicons.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class MatchScreen extends StatefulWidget {
   const MatchScreen({super.key});
@@ -113,8 +114,8 @@ class _MatchScreenState extends State<MatchScreen> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.04), width: 1)),
+            color: context.broColors.card,
+            border: Border(bottom: BorderSide(color: context.broColors.border, width: 1)),
           ),
           child: Column(
             children: [
@@ -139,12 +140,12 @@ class _MatchScreenState extends State<MatchScreen> {
                         decoration: BoxDecoration(
                           color: isSelected ? _teal : Colors.transparent,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isSelected ? _teal : const Color(0xFFF1F5F9), width: 1.5),
+                          border: Border.all(color: isSelected ? _teal : context.broColors.border, width: 1.5),
                         ),
                         child: Text(
                           vibe == 'ALL' ? 'ALL' : '#$vibe',
                           style: TextStyle(fontFamily: '.SF Pro Display', 
-                            color: isSelected ? Colors.white : const Color(0xFF64748B),
+                            color: isSelected ? Colors.white : context.broColors.subtext,
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
                             letterSpacing: 1,
@@ -162,14 +163,14 @@ class _MatchScreenState extends State<MatchScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('DISCOVERY RADIUS', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black26, letterSpacing: 1.5)),
+                        Text('DISCOVERY RADIUS', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 11, fontWeight: FontWeight.w900, color: context.broColors.subtext, letterSpacing: 1.5)),
                         Text('${_searchRadius.round()} KM', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w900, color: _teal)),
                       ],
                     ),
                     SliderTheme(
                       data: SliderTheme.of(context).copyWith(
                         activeTrackColor: _teal,
-                        inactiveTrackColor: const Color(0xFFF1F5F9),
+                        inactiveTrackColor: context.broColors.border,
                         thumbColor: Colors.white,
                         trackHeight: 3,
                         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 4),
@@ -198,7 +199,7 @@ class _MatchScreenState extends State<MatchScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  HugeIcon(icon: HugeIcons.strokeRoundedQueue01, color: !_isRadarView ? _teal : const Color(0xFF64748B), size: 16),
+                                  HugeIcon(icon: HugeIcons.strokeRoundedQueue01, color: !_isRadarView ? _teal : context.broColors.subtext, size: 16),
                                   const SizedBox(width: 8),
                                   Text(
                                     'CARDS VIEW',
@@ -206,7 +207,7 @@ class _MatchScreenState extends State<MatchScreen> {
                                       fontFamily: '.SF Pro Display',
                                       fontSize: 10,
                                       fontWeight: FontWeight.w900,
-                                      color: !_isRadarView ? _teal : const Color(0xFF64748B),
+                                      color: !_isRadarView ? _teal : context.broColors.subtext,
                                       letterSpacing: 1.2,
                                     ),
                                   ),
@@ -229,7 +230,7 @@ class _MatchScreenState extends State<MatchScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  HugeIcon(icon: HugeIcons.strokeRoundedCompass01, color: _isRadarView ? _teal : const Color(0xFF64748B), size: 16),
+                                  HugeIcon(icon: HugeIcons.strokeRoundedCompass01, color: _isRadarView ? _teal : context.broColors.subtext, size: 16),
                                   const SizedBox(width: 8),
                                   Text(
                                     'RADAR MAP',
@@ -237,7 +238,7 @@ class _MatchScreenState extends State<MatchScreen> {
                                       fontFamily: '.SF Pro Display',
                                       fontSize: 10,
                                       fontWeight: FontWeight.w900,
-                                      color: _isRadarView ? _teal : const Color(0xFF64748B),
+                                      color: _isRadarView ? _teal : context.broColors.subtext,
                                       letterSpacing: 1.2,
                                     ),
                                   ),
@@ -312,10 +313,10 @@ class _MatchScreenState extends State<MatchScreen> {
                           width: 64, height: 64,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFFF1F5F9),
+                            color: context.broColors.border,
                             image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
                           ),
-                          child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 32) : null,
+                          child: avatarUrl == null ? HugeIcon(icon: HugeIcons.strokeRoundedUser, color: context.broColors.subtext, size: 32) : null,
                         ),
                         if (isOnline)
                           Positioned(
@@ -325,7 +326,7 @@ class _MatchScreenState extends State<MatchScreen> {
                               decoration: BoxDecoration(
                                 color: _teal,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2.5),
+                                border: Border.all(color: context.isDark ? context.broColors.card : Colors.white, width: 2.5),
                                 boxShadow: [BoxShadow(color: _teal.withOpacity(0.4), blurRadius: 6, spreadRadius: 2)],
                               ),
                             ),
@@ -343,7 +344,7 @@ class _MatchScreenState extends State<MatchScreen> {
                           children: [
                             Row(
                               children: [
-                                Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 18, color: const Color(0xFF1E293B))),
+                                 Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, fontSize: 18, color: context.broColors.text)),
                                 if (isOnline) ...[
                                   const SizedBox(width: 8),
                                   Text('ONLINE', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 9, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 1)),
@@ -352,7 +353,7 @@ class _MatchScreenState extends State<MatchScreen> {
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8)),
+                              decoration: BoxDecoration(color: context.broColors.inputFill, borderRadius: BorderRadius.circular(8)),
                               child: Text(distance, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 10, fontWeight: FontWeight.w900, color: _teal, letterSpacing: 0.5)),
                             ),
                           ],
@@ -371,19 +372,19 @@ class _MatchScreenState extends State<MatchScreen> {
                               ],
                             ),
                           ),
-                        Text(bro['bio'] ?? 'This bro is silent but steady. Ready to build.', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: const Color(0xFF64748B), height: 1.5)),
+                        Text(bro['bio'] ?? 'This bro is silent but steady. Ready to build.', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, color: context.broColors.subtext, height: 1.5)),
                         const SizedBox(height: 20),
                         GestureDetector(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => PublicProfileScreen(userId: broId))),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5)),
+                            decoration: BoxDecoration(color: context.broColors.card, borderRadius: BorderRadius.circular(20), border: Border.all(color: context.broColors.border, width: 1.5)),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text('CONNECT', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF1E293B), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
+                                Text('CONNECT', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.5)),
                                 const SizedBox(width: 8),
-                                const HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: Color(0xFF1E293B), size: 14),
+                                HugeIcon(icon: HugeIcons.strokeRoundedArrowRight01, color: context.broColors.text, size: 14),
                               ],
                             ),
                           ),
@@ -394,7 +395,7 @@ class _MatchScreenState extends State<MatchScreen> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
+            Divider(height: 1, thickness: 1, color: context.broColors.border),
           ],
         );
       }
@@ -424,7 +425,7 @@ class _MatchScreenState extends State<MatchScreen> {
   }
 
   Widget _buildPulsingRadar() {
-    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [_PulsingRing(color: _teal), const SizedBox(height: 32), Text('PINGING THE BROHOOD...', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.black26, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))]));
+    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [_PulsingRing(color: _teal), const SizedBox(height: 32), Text('PINGING THE BROHOOD...', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontWeight: FontWeight.w900, letterSpacing: 3, fontSize: 11))]));
   }
 }
 
