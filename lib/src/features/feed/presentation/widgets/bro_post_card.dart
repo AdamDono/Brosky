@@ -376,7 +376,7 @@ class _BroPostCardState extends State<BroPostCard> {
                     
                     // Action Row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         // Comment (Wired to Nav)
                         GestureDetector(
@@ -389,6 +389,7 @@ class _BroPostCardState extends State<BroPostCard> {
                             ],
                           ),
                         ),
+                        const SizedBox(width: 24),
                         // Like
                         GestureDetector(
                           onTap: _handleReaction,
@@ -408,8 +409,6 @@ class _BroPostCardState extends State<BroPostCard> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 20),
-                        const SizedBox(width: 20),
                       ],
                     ),
                   ],

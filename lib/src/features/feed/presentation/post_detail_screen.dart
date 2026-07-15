@@ -5,6 +5,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:hugeicons/hugeicons.dart';
 import 'package:bro_app/src/features/notifications/application/notifications_service.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -350,19 +351,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               const Divider(color: Color(0xFFF1F5F9), thickness: 1),
               const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   // Comment Button
                   GestureDetector(
                     onTap: () => _commentFocusNode.requestFocus(),
                     child: Row(
                       children: [
-                        const HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: Color(0xFF64748B), size: 20),
+                        HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: context.broColors.subtext, size: 20),
                         const SizedBox(width: 8),
-                        Text('$_commentCount', style: const TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w600)),
+                        Text('$_commentCount', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 14, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 24),
                   // Like Button
                   GestureDetector(
                     onTap: _handleReaction,
@@ -373,17 +375,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                           scale: _likeIconScale,
                           child: HugeIcon(
                             icon: HugeIcons.strokeRoundedFavourite, 
-                            color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), 
+                            color: _myReaction != null ? Colors.redAccent : context.broColors.subtext, 
                             size: 20
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w600)),
+                        Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : context.broColors.subtext, fontSize: 14, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 20),
-                  const SizedBox(width: 20),
                 ],
               ),
             ],
