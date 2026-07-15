@@ -78,6 +78,8 @@ Let's build something real.
 
 ---
 
+---
+
 > 🚧 **Building in Public** 🚧  
 > This project is being built in 12 weeks. Follow the journey on [X (Twitter)](https://x.com/Adam_Dono_) or [LinkedIn](https://www.linkedin.com/in/adam-dono-85b766242/).
 
@@ -85,8 +87,9 @@ Let's build something real.
 
 ## 🚀 The Stack
 - **Framework:** Flutter (Mobile - iOS & Android)
-- **Backend:** Supabase (Auth, Database, Realtime)
-- **Voice:** ZegoCloud / Agora (Live Audio)
+- **Backend:** Supabase (Auth, Database, Realtime, Edge Functions)
+- **Push Server:** Google Firebase Cloud Messaging (FCM)
+- **Voice Infrastructure:** ZegoCloud (Live Audio Rooms)
 - **State Management:** Riverpod
 
 ## 🛠 Features (MVP)
@@ -94,12 +97,21 @@ Let's build something real.
 - **The Radar:** Find active Bros within 5km.
 - **Huddles:** Drop-in audio rooms to discuss topics live.
 - **Bro Feed:** Low-pressure text/image posts to see what's happening nearby.
+- **Direct Messaging:** Live chat threads supporting real-time messages, typing indicators, read receipts, and voice notes.
+- **Block Moderation:** Full bidirectional block enforcement filtering feeds, discovery list, active inbox threads, and chat screens. Includes a **Blocked Users** screen in settings to manage blocks.
+
+## 📁 Repository Structure
+- `lib/` — Flutter source code files.
+- `android/` — Native Android configurations.
+- `ios/` — Native iOS configurations.
+- `supabase/` — Database migrations and trigger edge functions (FCM trigger).
+- `docs/` — App marketing strategy guides, wireframes, and launch documentation.
 
 ## 📦 Running Locally
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/AdamDono/bro-app.git
+   git clone https://github.com/AdamDono/Brosky.git
    ```
 
 2. **Install dependencies**
@@ -109,11 +121,6 @@ Let's build something real.
 
 3. **Run the app**
    ```bash
-   flutter run -d web-server --web-hostname=0.0.0.0 --web-port=8080
+   flutter run
    ```
 
-   *Open http://localhost:8080 in Safari/Chrome*
-
----
-
-*Note: This repository contains the public code for BRO. Internal strategy documents are gitignored.*
