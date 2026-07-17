@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:bro_app/src/features/feed/presentation/post_detail_screen.dart';
+import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -95,20 +98,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: context.broColors.bg,
       appBar: AppBar(
-        title: Text('Notifications', style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.bold)),
+        title: Text('Notifications', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(color: context.broColors.text),
         actions: [
           IconButton(
             onPressed: _loadNotifications,
-            icon: const Icon(Icons.refresh, color: Color(0xFFFFFFFF)),
+            icon: Icon(Icons.refresh, color: context.broColors.text),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFFFFF)))
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6)))
           : _notifications.isEmpty
               ? _buildEmptyState()
               : ListView.builder(
@@ -127,12 +131,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.notifications_none, size: 64, color: Colors.white10),
+          Icon(Icons.notifications_none, size: 64, color: context.broColors.border),
           const SizedBox(height: 16),
           Text(
             'No notifications yet, Bro.\nStay active to get updates!',
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white38, fontSize: 16),
+            style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 16),
           ),
         ],
       ),
@@ -147,12 +151,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isRead ? const Color(0xFF1E293B) : const Color(0xFF1E293B).withOpacity(0.8),
+        color: context.broColors.card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isRead ? Colors.transparent : const Color(0xFFFFFFFF).withOpacity(0.3),
-          width: 1,
+          color: isRead ? context.broColors.border : const Color(0xFF14B8A6).withOpacity(0.4),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -160,23 +171,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           children: [
             CircleAvatar(
               radius: 24,
-              backgroundColor: const Color(0xFFFFFFFF),
+              backgroundColor: context.broColors.border,
               backgroundImage: actorAvatar != null ? NetworkImage(actorAvatar) : null,
-              child: actorAvatar == null ? const Icon(Icons.person, color: Colors.black) : null,
+              child: actorAvatar == null ? Icon(Icons.person, color: context.broColors.subtext) : null,
             ),
             Positioned(
               bottom: 0,
               right: 0,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF000000),
+                decoration: BoxDecoration(
+                  color: context.broColors.card,
                   shape: BoxShape.circle,
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 2),
+                  ],
                 ),
                 child: Icon(
                   _getNotificationIcon(notif['type']),
-                  size: 12,
-                  color: const Color(0xFFFFFFFF),
+                  size: 11,
+                  color: context.broColors.text,
                 ),
               ),
             ),
@@ -184,27 +198,90 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         title: Text(
           _getNotificationText(notif),
-          style: TextStyle(fontFamily: '.SF Pro Display', 
-            color: Colors.white,
+          style: TextStyle(
+            fontFamily: '.SF Pro Display', 
+            color: context.broColors.text,
             fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
           ),
         ),
         subtitle: Text(
           timeago.format(createdAt),
-          style: const TextStyle(color: Colors.white38, fontSize: 12),
+          style: TextStyle(color: context.broColors.subtext, fontSize: 12),
         ),
         trailing: !isRead
             ? Container(
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFFFFFFF),
+                  color: Color(0xFF14B8A6),
                   shape: BoxShape.circle,
                 ),
               )
             : null,
-        onTap: () => _markAsRead(notif['id']),
+        onTap: () => _handleNotificationTap(notif),
       ),
     );
+  }
+
+  Future<void> _handleNotificationTap(Map<String, dynamic> notif) async {
+    debugPrint('*** TAP NOTIFICATION: ${notif['id']} Type: ${notif['type']} Ref: ${notif['reference_id']}');
+    _markAsRead(notif['id']);
+
+    final type = notif['type'];
+    final actorId = notif['actor_id'];
+    final refId = notif['reference_id'];
+
+    if (type == 'post_reaction' || type == 'post_comment') {
+      try {
+        debugPrint('*** RESOLVING POST FROM REF: $refId');
+        Map<String, dynamic>? post;
+
+        try {
+          final res = await Supabase.instance.client
+              .from('bro_posts')
+              .select()
+              .eq('id', refId)
+              .single();
+          post = res;
+        } catch (_) {
+          if (type == 'post_comment') {
+            final comment = await Supabase.instance.client
+                .from('post_comments')
+                .select('post_id')
+                .eq('id', refId)
+                .single();
+            final res = await Supabase.instance.client
+                .from('bro_posts')
+                .select()
+                .eq('id', comment['post_id'])
+                .single();
+            post = res;
+          } else if (type == 'post_reaction') {
+            final reaction = await Supabase.instance.client
+                .from('post_likes')
+                .select('post_id')
+                .eq('id', refId)
+                .single();
+            final res = await Supabase.instance.client
+                .from('bro_posts')
+                .select()
+                .eq('id', reaction['post_id'])
+                .single();
+            post = res;
+          }
+        }
+
+        if (post != null && mounted) {
+          debugPrint('*** NAVIGATING TO POST DETAIL: ${post['id']}');
+          Navigator.push(context, MaterialPageRoute(builder: (_) => PostDetailScreen(post: post!)));
+        } else {
+          debugPrint('*** RESOLVED POST IS NULL');
+        }
+      } catch (e) {
+        debugPrint('*** ERROR RESOLVING POST: $e');
+      }
+    } else if (type == 'new_follower' && actorId != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(userId: actorId)));
+    }
   }
 }

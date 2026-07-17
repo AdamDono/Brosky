@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bro_app/src/features/onboarding/presentation/intro_screen.dart';
-
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:bro_app/src/core/theme/theme_provider.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:bro_app/src/core/services/push_notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +20,16 @@ Future<void> main() async {
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncnRpaXJ0a29heG5wbnlibXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MjY0ODcsImV4cCI6MjA4NjAwMjQ4N30.uZhiTWtKjCpT8eAaiHuX0f_3S2bD3uQyUc0feINw948',
   );
 
+  try {
+    await Firebase.initializeApp();
+    await PushNotificationService().initialize();
+    debugPrint('*** Firebase initialized successfully.');
+  } catch (e, stack) {
+    debugPrint('*** Firebase init error: $e');
+    debugPrint('*** Stack: $stack');
+    // App continues without push notifications rather than crashing
+  }
+
   runApp(
     const ProviderScope(
       child: BroApp(),
@@ -24,42 +37,19 @@ Future<void> main() async {
   );
 }
 
-class BroApp extends StatelessWidget {
+class BroApp extends ConsumerWidget {
   const BroApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    const Color primaryIndigo = Color(0xFF14B8A6);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
 
     return MaterialApp(
       title: 'BROSKY',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF000000), // Pure Obsidian
-        primaryColor: primaryIndigo,
-        canvasColor: const Color(0xFF111111),
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-          displayLarge: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w900, color: Colors.white),
-          titleLarge: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, color: Colors.white),
-          bodyMedium: TextStyle(fontFamily: '.SF Pro Display', color: Colors.white70),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 1),
-        ),
-        colorScheme: const ColorScheme.dark(
-          primary: primaryIndigo,
-          onPrimary: Colors.white,
-          secondary: Color(0xFF4F46E5),
-          surface: Color(0xFF0A0A0A),
-          onSurface: Colors.white,
-          background: Colors.black,
-        ),
-        useMaterial3: true,
-      ),
+      theme: broLightTheme,
+      darkTheme: broDarkTheme,
+      themeMode: themeMode,
       home: const SplashScreen(),
       routes: {
         '/login': (context) => const AuthScreen(),

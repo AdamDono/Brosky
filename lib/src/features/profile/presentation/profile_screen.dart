@@ -1,23 +1,25 @@
 import 'package:bro_app/src/features/profile/presentation/edit_profile_screen.dart';
+import 'package:bro_app/src/features/profile/presentation/blocked_users_screen.dart';
 import 'package:bro_app/src/features/auth/presentation/auth_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:bro_app/src/core/theme/theme_provider.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
-  int _huddleCount = 0;
-  int _broCount = 0;
 
   @override
   void initState() {
@@ -30,7 +32,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      // Fetch Profile (keep bio/username static or manual refresh as they change less often)
       final profileData = await Supabase.instance.client
           .from('profiles')
           .select()
@@ -49,37 +50,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Helper widget for live counts
-  Widget _buildLiveStat(String label, String table, String column, String matchId) {
-    var query = Supabase.instance.client
-        .from(table)
-        .stream(primaryKey: ['id']);
-    
-    // We can't do complex filters in .stream() easily without custom functions, 
-    // so let's use a simpler count fetcher with a periodic refresh or leave as is.
-    // Actually, for real-time counts, a StreamBuilder on the table is best.
-    
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: Supabase.instance.client.from(table).stream(primaryKey: ['id']).eq(column, matchId),
-      builder: (context, snapshot) {
-        // Special case for conversations where user can be user1 or user2
-        // For MVP, we'll keep the static count but refresh it more often or 
-        // handle it through a more comprehensive stream.
-        // Let's stick to a robust FutureBuilder for the 'accepted' complex count 
-        // but ensure it's triggered on any change.
-        return _buildStat(label, (snapshot.data?.length ?? 0).toString());
-      },
-    );
-  }
-
   Future<void> _signOut() async {
     try {
       await Supabase.instance.client.auth.signOut();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully Signed Out! See you soon, Bro. 👊'),
-            backgroundColor: Color(0xFFFFFFFF),
+          SnackBar(
+            content: Text(
+              'Successfully Signed Out! See you soon, Bro. 👊',
+              style: TextStyle(
+                fontFamily: '.SF Pro Display',
+                fontWeight: FontWeight.w600,
+                color: context.isDark ? Colors.white : const Color(0xFF1E293B),
+              ),
+            ),
+            backgroundColor: context.broColors.card,
           ),
         );
         Navigator.of(context).pushAndRemoveUntil(
@@ -102,14 +87,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showPremiumSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.broColors.card,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2))),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: context.broColors.border, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 24),
             Container(
               width: 64, height: 64,
@@ -117,12 +102,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Icon(Icons.workspace_premium, color: Color(0xFF14B8A6), size: 32),
             ),
             const SizedBox(height: 20),
-            const Text('Bro Premium', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+            Text('Bro Premium', style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 22, fontWeight: FontWeight.w800, color: context.broColors.text)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Unlock exclusive features, priority matching, and unlimited Huddle access. Coming soon.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF64748B), height: 1.6),
+              style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 14, fontWeight: FontWeight.w500, color: context.broColors.subtext, height: 1.6),
             ),
             const SizedBox(height: 28),
             SizedBox(
@@ -180,9 +165,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF8FAFC),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6))),
+      return Scaffold(
+        backgroundColor: context.broColors.bg,
+        body: const Center(child: CircularProgressIndicator(color: Color(0xFF14B8A6))),
       );
     }
 
@@ -190,15 +175,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final bio = _profile?['bio'] ?? 'Building the future of connection 🚀';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: context.broColors.bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF1E293B)),
+        iconTheme: IconThemeData(color: context.broColors.text),
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.settings_outlined, color: Color(0xFF1E293B)),
+            icon: Icon(Icons.settings_outlined, color: context.broColors.text),
           ),
         ],
       ),
@@ -214,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Center(
                 child: CircleAvatar(
                   radius: 50,
-                  backgroundColor: const Color(0xFFE2E8F0),
+                  backgroundColor: context.broColors.border,
                   backgroundImage: _profile?['avatar_url'] != null 
                     ? NetworkImage(_profile!['avatar_url']) 
                     : null,
@@ -229,7 +214,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1E293B),
+                  color: context.broColors.text,
                 ),
               ),
               const SizedBox(height: 8),
@@ -239,7 +224,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 style: TextStyle(fontFamily: '.SF Pro Display', 
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: const Color(0xFF64748B),
+                  color: context.broColors.subtext,
                   height: 1.5,
                 ),
               ),
@@ -259,14 +244,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                 },
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
-                  backgroundColor: Colors.white,
+                  side: BorderSide(color: context.broColors.border, width: 1.5),
+                  backgroundColor: context.broColors.card,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
-                child: const Text(
+                child: Text(
                   'Edit Profile',
-                  style: TextStyle(fontFamily: '.SF Pro Display', color: Color(0xFF1E293B), fontWeight: FontWeight.w600, fontSize: 13),
+                  style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontWeight: FontWeight.w600, fontSize: 13),
                 ),
               ),
               
@@ -308,18 +293,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               
               const SizedBox(height: 32),
-              const Divider(color: Color(0xFFF1F5F9), thickness: 1),
+              Divider(color: context.broColors.border, thickness: 1),
               const SizedBox(height: 16),
   
               // Settings / Menu Items
               _buildMenuItem(Icons.workspace_premium, 'Bro Premium', badge: true, onTap: () => _showPremiumSheet()),
               _buildMenuItem(Icons.share, 'Invite Friends', onTap: () => _inviteFriends()),
               _buildMenuItem(Icons.help_outline, 'Help & Support', onTap: () => _openSupport()),
+              _buildMenuItem(Icons.block_rounded, 'Blocked Users', onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (ctx) => const BlockedUsersScreen()));
+              }),
+              _buildThemeToggle(),
               
               const SizedBox(height: 24),
               TextButton(
                 onPressed: _signOut,
-                child: Text(
+                child: const Text(
                   'Sign Out',
                   style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontWeight: FontWeight.w600, fontSize: 14),
                 ),
@@ -340,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(fontFamily: '.SF Pro Display', 
             fontSize: 20,
             fontWeight: FontWeight.w800,
-            color: const Color(0xFF1E293B),
+            color: context.broColors.text,
           ),
         ),
         const SizedBox(height: 4),
@@ -349,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(fontFamily: '.SF Pro Display', 
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: const Color(0xFF94A3B8),
+            color: context.broColors.subtext,
           ),
         ),
       ],
@@ -363,17 +352,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFF1F5F9)),
+          color: context.broColors.card,
+          border: Border.all(color: context.broColors.border),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: const Color(0xFF64748B), size: 20),
+        child: Icon(icon, color: context.broColors.subtext, size: 20),
       ),
       title: Text(
         title,
         style: TextStyle(fontFamily: '.SF Pro Display', 
           fontSize: 15,
-          color: const Color(0xFF1E293B),
+          color: context.broColors.text,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -386,7 +375,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: const Text('PRO', style: TextStyle(color: Colors.white, fontFamily: '.SF Pro Display', fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1)),
             )
-          : const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1)),
+          : Icon(Icons.chevron_right, color: context.broColors.border),
+    );
+  }
+
+  Widget _buildThemeToggle() {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: context.broColors.card,
+          border: Border.all(color: context.broColors.border),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          color: const Color(0xFF14B8A6),
+          size: 20,
+        ),
+      ),
+      title: Text(
+        'Dark Mode',
+        style: TextStyle(
+          fontFamily: '.SF Pro Display',
+          fontSize: 15,
+          color: context.broColors.text,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      trailing: Switch(
+        value: isDark,
+        onChanged: (value) {
+          ref.read(themeProvider.notifier).toggle();
+        },
+      ),
     );
   }
 }

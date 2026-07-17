@@ -1,11 +1,13 @@
 import 'package:bro_app/src/features/feed/presentation/create_post_modal.dart';
 import 'package:bro_app/src/features/feed/presentation/public_profile_screen.dart';
 import 'package:bro_app/src/features/feed/presentation/post_detail_screen.dart';
+import 'package:bro_app/src/features/notifications/application/notifications_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:hugeicons/hugeicons.dart';
+import 'package:bro_app/src/core/theme/app_theme.dart';
 
 class BroPostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -104,6 +106,12 @@ class _BroPostCardState extends State<BroPostCard> {
           'user_id': user.id,
           'reaction_type': '❤️'
         }, onConflict: 'post_id,user_id');
+
+        NotificationsService.triggerNotification(
+          recipientId: widget.post['user_id'],
+          type: 'post_reaction',
+          referenceId: widget.post['id'],
+        );
       }
     } catch (e) { 
       debugPrint('Error reacting: $e');
@@ -206,10 +214,10 @@ class _BroPostCardState extends State<BroPostCard> {
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFF1F5F9),
+                    color: context.broColors.border,
                     image: avatarUrl != null ? DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover) : null,
                   ),
-                  child: avatarUrl == null ? const HugeIcon(icon: HugeIcons.strokeRoundedUser, color: Color(0xFFCBD5E1), size: 24) : null,
+                  child: avatarUrl == null ? HugeIcon(icon: HugeIcons.strokeRoundedUser, color: context.broColors.subtext, size: 24) : null,
                 ),
               ),
               const SizedBox(width: 12),
@@ -224,10 +232,10 @@ class _BroPostCardState extends State<BroPostCard> {
                       children: [
                         GestureDetector(
                            onTap: _navigateToDetail,
-                           child: Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: const Color(0xFF1E293B)))
+                            child: Text(username, style: TextStyle(fontFamily: '.SF Pro Display', fontWeight: FontWeight.w800, fontSize: 15, color: context.broColors.text))
                         ),
                         const SizedBox(width: 6),
-                        Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF94A3B8), fontSize: 14, fontWeight: FontWeight.w500)),
+                        Text('· ${timeago.format(createdAt, locale: 'en_short')}', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 14, fontWeight: FontWeight.w500)),
                         const Spacer(),
                         IconButton(
                           onPressed: () {
@@ -235,26 +243,26 @@ class _BroPostCardState extends State<BroPostCard> {
                               context: context,
                               backgroundColor: Colors.transparent,
                               builder: (ctx) => Container(
-                                decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+                                decoration: BoxDecoration(color: context.broColors.card, borderRadius: const BorderRadius.vertical(top: Radius.circular(32))),
                                 padding: const EdgeInsets.all(24),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (isMyPost) ...[
                                       ListTile(
-                                        leading: const HugeIcon(icon: HugeIcons.strokeRoundedEdit01, color: Colors.black54),
-                                        title: const Text('Edit Post'),
+                                        leading: HugeIcon(icon: HugeIcons.strokeRoundedEdit01, color: context.broColors.text),
+                                        title: Text('Edit Post', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontWeight: FontWeight.w600)),
                                         onTap: () { Navigator.pop(ctx); _handleEdit(); },
                                       ),
                                       ListTile(
                                         leading: const HugeIcon(icon: HugeIcons.strokeRoundedDelete01, color: Colors.redAccent),
-                                        title: const Text('Delete Post', style: TextStyle(color: Colors.redAccent)),
+                                        title: const Text('Delete Post', style: TextStyle(fontFamily: '.SF Pro Display', color: Colors.redAccent, fontWeight: FontWeight.w600)),
                                         onTap: () { Navigator.pop(ctx); _handleDelete(); },
                                       ),
                                     ],
                                     ListTile(
-                                      leading: const HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: Colors.black54),
-                                      title: const Text('Report Post'),
+                                      leading: HugeIcon(icon: HugeIcons.strokeRoundedAlertCircle, color: context.broColors.text),
+                                      title: Text('Report Post', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.text, fontWeight: FontWeight.w600)),
                                       onTap: () => Navigator.pop(ctx),
                                     ),
                                   ],
@@ -282,8 +290,27 @@ class _BroPostCardState extends State<BroPostCard> {
                             children: [
                               Text(
                                 widget.post['content'] ?? '', 
-                                style: const TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: Color(0xFF1E293B), fontWeight: FontWeight.w400)
+                                style: TextStyle(fontFamily: '.SF Pro Display', fontSize: 15, height: 1.5, color: context.broColors.text, fontWeight: FontWeight.w400)
                               ),
+                              if (widget.post['location_label'] != null) ...[
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.location_on, size: 13, color: Color(0xFF14B8A6)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      widget.post['location_label'],
+                                      style: TextStyle(
+                                        fontFamily: '.SF Pro Display',
+                                        fontSize: 12,
+                                        color: context.broColors.subtext,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               if (widget.post['image_url'] != null) ...[
                                 const SizedBox(height: 12),
                                 Container(
@@ -299,7 +326,7 @@ class _BroPostCardState extends State<BroPostCard> {
                                         loadingBuilder: (context, child, loadingProgress) {
                                           if (loadingProgress == null) return child;
                                           return Container(
-                                            color: const Color(0xFFF8FAFC),
+                                            color: context.broColors.border,
                                             child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                           );
                                         },
@@ -349,7 +376,7 @@ class _BroPostCardState extends State<BroPostCard> {
                     
                     // Action Row
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         // Comment (Wired to Nav)
                         GestureDetector(
@@ -358,10 +385,11 @@ class _BroPostCardState extends State<BroPostCard> {
                             children: [
                               const HugeIcon(icon: HugeIcons.strokeRoundedBubbleChat, color: Color(0xFF64748B), size: 18),
                               const SizedBox(width: 8),
-                              Text('$_commentCount', style: TextStyle(fontFamily: '.SF Pro Display', color: const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                              Text('$_commentCount', style: TextStyle(fontFamily: '.SF Pro Display', color: context.broColors.subtext, fontSize: 13, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 24),
                         // Like
                         GestureDetector(
                           onTap: _handleReaction,
@@ -377,12 +405,10 @@ class _BroPostCardState extends State<BroPostCard> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+                              Text('$_totalReactions', style: TextStyle(fontFamily: '.SF Pro Display', color: _myReaction != null ? Colors.redAccent : context.broColors.subtext, fontSize: 13, fontWeight: FontWeight.w500)),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 20),
-                        const SizedBox(width: 20),
                       ],
                     ),
                   ],
@@ -391,7 +417,7 @@ class _BroPostCardState extends State<BroPostCard> {
             ],
           ),
         ),
-        const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)), 
+        Divider(height: 1, thickness: 1, color: context.broColors.border), 
       ],
     );
   }

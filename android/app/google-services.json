@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "297360666460",
+    "project_id": "brosky-cde87",
+    "storage_bucket": "brosky-cde87.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:297360666460:android:47b4cdf92a976a832bdb99",
+        "android_client_info": {
+          "package_name": "pace.brosky"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvBOvIJLSsK3ZUrLCBpENkdH-BdU-Irls"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

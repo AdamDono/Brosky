@@ -31,9 +31,14 @@ dependencies:
   zego_uikit_prebuilt_call: ^4.24.2
   shared_preferences: ^2.2.2
   url_launcher: ^6.2.4
-  record: ^5.1.2
+  record: ^7.1.1
   audioplayers: ^6.0.0
   http: ^1.2.0
+
+  # Push Notifications
+  firebase_core: ^4.12.1
+  firebase_messaging: ^16.4.3
+
 
 dev_dependencies:
   flutter_test:
