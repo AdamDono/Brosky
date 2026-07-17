@@ -23,8 +23,11 @@ Future<void> main() async {
   try {
     await Firebase.initializeApp();
     await PushNotificationService().initialize();
-  } catch (e) {
-    debugPrint('*** Firebase initialization bypassed (awaiting credentials file): $e');
+    debugPrint('*** Firebase initialized successfully.');
+  } catch (e, stack) {
+    debugPrint('*** Firebase init error: $e');
+    debugPrint('*** Stack: $stack');
+    // App continues without push notifications rather than crashing
   }
 
   runApp(

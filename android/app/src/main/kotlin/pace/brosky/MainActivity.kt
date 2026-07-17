@@ -1,4 +1,4 @@
-package com.example.bro_app
+package pace.brosky
 
 import io.flutter.embedding.android.FlutterActivity
 
