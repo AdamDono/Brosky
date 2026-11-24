@@ -19,17 +19,17 @@ class _IntroScreenState extends State<IntroScreen> {
     {
       'title': 'THE BROHOOD',
       'subtitle': 'A digital corner store for men to talk, connect, and grow without the noise.',
-      'image': 'assets/images/auth_hero.png', // Reusing your premium illustration
+      'image': 'assets/images/onboarding_1.png',
     },
     {
       'title': 'SAFE SPACE',
       'subtitle': 'Real talk only. No judgment, no filters—just brotherhood and accountability.',
-      'image': 'assets/images/auth_hero.png', 
+      'image': 'assets/images/onboarding_2.png',
     },
     {
       'title': 'GLOBAL SQUAD',
       'subtitle': 'Find your tribe. From gaming to fitness, join huddles that match your vibe.',
-      'image': 'assets/images/auth_hero.png',
+      'image': 'assets/images/onboarding_3.png',
     },
   ];
 
