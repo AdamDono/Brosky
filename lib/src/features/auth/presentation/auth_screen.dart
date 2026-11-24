@@ -2,6 +2,7 @@ import 'package:bro_app/src/features/auth/presentation/terms_screen.dart';
 import 'package:bro_app/src/features/auth/presentation/forgot_password_screen.dart';
 import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:bro_app/src/features/onboarding/presentation/intro_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -161,11 +162,19 @@ class _AuthScreenState extends State<AuthScreen> {
         textTheme: ThemeData.light().textTheme.apply(fontFamily: '.SF Pro Display'),
       ),
       child: PopScope(
-        canPop: !_isSignUp,
+        canPop: false,
         onPopInvokedWithResult: (didPop, result) {
           if (didPop) return;
           if (_isSignUp) {
             setState(() => _isSignUp = false);
+          } else {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const IntroScreen()),
+              );
+            }
           }
         },
         child: Scaffold(
@@ -175,16 +184,32 @@ class _AuthScreenState extends State<AuthScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (!_isSignUp) ...[
+                  // --- Visible Top Back Button ---
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12, top: 8),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                      onPressed: () {
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        } else {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(builder: (context) => const IntroScreen()),
+                          );
+                        }
+                      },
+                    ),
+                  ),
                   // --- High-End Line Art Illustration ---
                   Padding(
-                    padding: const EdgeInsets.only(top: 20),
+                    padding: const EdgeInsets.only(top: 0),
                     child: Center(
                       child: Image.asset(
-                        'assets/images/auth_hero.png',
-                        height: 380,
+                        'assets/images/auth_hero_clean.png',
+                        height: 280,
                         fit: BoxFit.contain,
                         errorBuilder: (c, e, s) => Container(
-                          height: 300,
+                          height: 250,
                           alignment: Alignment.center,
                           child: Icon(Icons.person_outline_rounded, size: 80, color: _primaryColor.withOpacity(0.1)),
                         ),

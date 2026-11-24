@@ -103,6 +103,22 @@ class _IntroScreenState extends State<IntroScreen> {
             },
           ),
           
+          // Top Back button when on slide 2 or 3
+          if (_currentPage > 0)
+            Positioned(
+              top: 50,
+              left: 20,
+              child: IconButton(
+                onPressed: () {
+                  _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                icon: const Icon(Icons.arrow_back, color: Colors.black54),
+              ),
+            ),
+          
           // Bottom Navigation
           Positioned(
             bottom: 60,
