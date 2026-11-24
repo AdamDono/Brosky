@@ -37,7 +37,7 @@ class _IntroScreenState extends State<IntroScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('has_seen_intro', true);
     if (mounted) {
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).push(
         MaterialPageRoute(builder: (context) => const AuthScreen()),
       );
     }
@@ -45,9 +45,20 @@ class _IntroScreenState extends State<IntroScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
+    return PopScope(
+      canPop: _currentPage == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentPage > 0) {
+          _pageController.previousPage(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
         children: [
           PageView.builder(
             controller: _pageController,
@@ -146,6 +157,7 @@ class _IntroScreenState extends State<IntroScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

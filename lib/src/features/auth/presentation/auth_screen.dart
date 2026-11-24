@@ -160,8 +160,16 @@ class _AuthScreenState extends State<AuthScreen> {
         primaryColor: _primaryColor,
         textTheme: ThemeData.light().textTheme.apply(fontFamily: '.SF Pro Display'),
       ),
-      child: Scaffold(
-        body: SafeArea(
+      child: PopScope(
+        canPop: !_isSignUp,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          if (_isSignUp) {
+            setState(() => _isSignUp = false);
+          }
+        },
+        child: Scaffold(
+          body: SafeArea(
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,8 +386,9 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildLabel(String label) {
     return Padding(

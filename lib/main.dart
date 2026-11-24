@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:bro_app/src/features/auth/presentation/auth_screen.dart';
 import 'package:bro_app/src/features/home/presentation/home_screen.dart';
 import 'package:bro_app/src/features/onboarding/presentation/onboarding_screen.dart';
@@ -12,12 +14,38 @@ import 'package:bro_app/src/core/theme/app_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:bro_app/src/core/services/push_notification_service.dart';
 
+// Switch between local Supabase and remote Supabase
+const bool kUseLocalSupabase = bool.fromEnvironment('USE_LOCAL_SUPABASE', defaultValue: true);
+
+const String _remoteSupabaseUrl = 'https://pgrtiirtkoaxnpnybmuw.supabase.co';
+const String _remoteSupabaseAnonKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncnRpaXJ0a29heG5wbnlibXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MjY0ODcsImV4cCI6MjA4NjAwMjQ4N30.uZhiTWtKjCpT8eAaiHuX0f_3S2bD3uQyUc0feINw948';
+
+const String _localSupabaseAnonKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+
+String get _supabaseUrl {
+  if (kUseLocalSupabase) {
+    // Android emulator routes host localhost to 10.0.2.2
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:54321';
+    }
+    return 'http://127.0.0.1:54321';
+  }
+  return _remoteSupabaseUrl;
+}
+
+String get _supabaseAnonKey {
+  return kUseLocalSupabase ? _localSupabaseAnonKey : _remoteSupabaseAnonKey;
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  debugPrint('*** Connecting to Supabase at: $_supabaseUrl (local: $kUseLocalSupabase)');
   await Supabase.initialize(
-    url: 'https://pgrtiirtkoaxnpnybmuw.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBncnRpaXJ0a29heG5wbnlibXV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0MjY0ODcsImV4cCI6MjA4NjAwMjQ4N30.uZhiTWtKjCpT8eAaiHuX0f_3S2bD3uQyUc0feINw948',
+    url: _supabaseUrl,
+    anonKey: _supabaseAnonKey,
   );
 
   try {
